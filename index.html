@@ -1,0 +1,2290 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>《面白大丈夫 × 悅思人搞笑大富翁》40人課堂互動平台</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background-color: #0F172A;
+      color: #F8FAFC;
+      overflow-x: hidden;
+      user-select: none;
+    }
+
+    /* 電視外框 6x4 大富翁棋盤 Grid */
+    .monopoly-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      grid-template-rows: repeat(4, minmax(128px, 1fr));
+      gap: 10px;
+    }
+
+    /* 中央主舞台佔據 Col 2~5, Row 2~3 */
+    .center-stage {
+      grid-column: 2 / 6;
+      grid-row: 2 / 4;
+    }
+
+    /* 棋盤格子特效 */
+    .board-tile {
+      position: relative;
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.25), 0 4px 10px rgba(0, 0, 0, 0.35);
+    }
+    .board-tile:hover {
+      transform: translateY(-2px) scale(1.01);
+      z-index: 10;
+    }
+    .board-tile.active-tile {
+      outline: 4px solid #FACC15;
+      box-shadow: 0 0 25px rgba(250, 204, 21, 0.85), inset 0 0 12px rgba(255, 255, 255, 0.5);
+      transform: scale(1.03);
+      z-index: 20;
+    }
+
+    /* 角色棋子徽章動畫 */
+    .token-badge {
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .token-active-glow {
+      box-shadow: 0 0 0 3px #FFFFFF, 0 0 14px #FACC15;
+      transform: scale(1.15);
+      z-index: 30;
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.3) translateY(-15px); opacity: 0; }
+      70% { transform: scale(1.2) translateY(2px); opacity: 1; }
+      100% { transform: scale(1) translateY(0); opacity: 1; }
+    }
+
+    @keyframes diceShake {
+      0%, 100% { transform: rotate(0deg) scale(1); }
+      20% { transform: rotate(-18deg) scale(1.15); }
+      40% { transform: rotate(18deg) scale(1.2); }
+      60% { transform: rotate(-12deg) scale(1.15); }
+      80% { transform: rotate(12deg) scale(1.1); }
+    }
+    .dice-rolling {
+      animation: diceShake 0.4s infinite;
+    }
+
+    /* IPPON 滿分特效覆蓋層 */
+    @keyframes ipponBurst {
+      0% { transform: scale(0.2) rotate(-10deg); opacity: 0; }
+      50% { transform: scale(1.15) rotate(3deg); opacity: 1; }
+      75% { transform: scale(0.95) rotate(-1deg); opacity: 1; }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+    .ippon-animate {
+      animation: ipponBurst 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col p-3 md:p-4 bg-gradient-to-br from-[#0F2027] via-[#162A22] to-[#1A365D]">
+
+  <!-- 頂部綜藝節目導播列 -->
+  <header class="flex flex-wrap items-center justify-between gap-3 bg-[#162A22]/95 border-2 border-[#8CE0B8]/40 rounded-xl px-4 py-2.5 mb-3 shadow-lg">
+    <div class="flex items-center gap-3">
+      <span class="bg-[#E05A47] text-white font-black px-3 py-1 rounded-lg text-sm tracking-wider shadow">
+        <i class="fa-solid fa-tv mr-1"></i>W09 實境舞台
+      </span>
+      <div>
+        <h1 class="text-lg md:text-xl font-black text-[#FAF8F5] tracking-wide flex items-center gap-2">
+          《面白大丈夫 × 悅思人搞笑大富翁》40人課堂共鬥平台
+          <span class="text-xs font-bold bg-[#F6E05E] text-[#1A202C] px-2.5 py-0.5 rounded-full">8組×5人編號制</span>
+        </h1>
+      </div>
+    </div>
+
+    <!-- 右側工具按鈕組 -->
+    <div class="flex flex-wrap items-center gap-2">
+      <button onclick="openCloudSyncModal()" class="bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-black px-3.5 py-1.5 rounded-lg text-sm shadow-md active:scale-95 transition flex items-center gap-1.5 border border-white/40">
+        <i id="cloudStatusIcon" class="fa-solid fa-cloud-arrow-up"></i>
+        <span id="cloudStatusText">☁️ 雲端存檔 / 部署</span>
+      </button>
+      <button onclick="openStudentQuestionModal()" class="bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-400 hover:to-rose-500 text-white font-black px-3.5 py-1.5 rounded-lg text-sm shadow-md active:scale-95 transition flex items-center gap-1.5 border border-white/40">
+        <i class="fa-solid fa-file-circle-plus"></i> ➕ 學生出題 / 傳梗圖
+        <span id="studentQuestionCountBadge" class="bg-yellow-300 text-slate-950 text-xs font-black px-1.5 py-0.2 rounded-full">0</span>
+      </button>
+      <button onclick="playSound('ippon'); triggerIpponBanner('IPPON！滿分神救場！', '請直接去坐高麗菜煮蛋那桌（ㄅ級分）！')" class="bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 font-black px-3.5 py-1.5 rounded-lg text-sm shadow-md active:scale-95 transition flex items-center gap-1.5">
+        <i class="fa-solid fa-bell"></i> IPPON 滿分音效
+      </button>
+      <button onclick="playSound('laugh')" class="bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-3 py-1.5 rounded-lg text-sm shadow active:scale-95 transition flex items-center gap-1.5">
+        <i class="fa-solid fa-face-laugh-squint"></i> 綜藝歡呼
+      </button>
+      <button onclick="openTeamModal()" class="bg-slate-700 hover:bg-slate-600 text-slate-100 font-bold px-3 py-1.5 rounded-lg text-sm shadow active:scale-95 transition flex items-center gap-1.5">
+        <i class="fa-solid fa-users-gear"></i> 組別設定
+      </button>
+      <button onclick="openResetModal()" class="bg-rose-800/80 hover:bg-rose-700 text-rose-100 font-bold px-3 py-1.5 rounded-lg text-sm shadow active:scale-95 transition flex items-center gap-1.5">
+        <i class="fa-solid fa-rotate-left"></i> 重置棋盤
+      </button>
+    </div>
+  </header>
+
+  <!-- 主內容區：左方大富翁 16 格電視棋盤 + 右方 8 組即時戰況計分板 -->
+  <main class="flex-grow grid grid-cols-1 xl:grid-cols-12 gap-3.5 items-stretch">
+
+    <!-- 左側（佔 9 欄）：6x4 巨型電視外框大富翁棋盤 -->
+    <section class="xl:col-span-9 flex flex-col justify-between bg-[#1A365D] p-3 rounded-2xl border-4 border-white/90 shadow-2xl">
+      <div class="monopoly-grid flex-grow" id="boardGrid">
+        <!-- 由 JS 動態渲染 16 格與中央決戰舞台 -->
+      </div>
+    </section>
+
+    <!-- 右側（佔 3 欄）：8 組代表隊伍操控與排行榜 -->
+    <aside class="xl:col-span-3 flex flex-col justify-between bg-[#162A22] border-2 border-[#8CE0B8]/30 rounded-2xl p-3.5 shadow-2xl">
+      <div>
+        <div class="flex items-center justify-between border-b border-[#2D4A3E] pb-2.5 mb-2.5">
+          <div>
+            <h2 class="text-base font-black text-[#8CE0B8] flex items-center gap-1.5">
+              <i class="fa-solid fa-ranking-star"></i> 各組位置與ㄅ級分榜
+            </h2>
+            <p class="text-xs text-slate-300 mt-0.5">點擊組別可切換當前行動隊伍</p>
+          </div>
+          <button onclick="openCoopModal()" class="bg-[#E05A47] hover:bg-[#d04a37] text-white text-xs font-black px-2.5 py-1.5 rounded-lg shadow transition active:scale-95">
+            <i class="fa-solid fa-bolt mr-1"></i>全班共鬥加分
+          </button>
+        </div>
+
+        <!-- 8 組列表容器 -->
+        <div id="teamListContainer" class="space-y-2 max-h-[500px] overflow-y-auto pr-1">
+          <!-- 由 JS 動態渲染 8 個組別卡片 -->
+        </div>
+      </div>
+
+      <!-- 底部快速走位微調工具列 -->
+      <div class="mt-3 pt-2.5 border-t border-[#2D4A3E]">
+        <div class="text-xs font-bold text-slate-300 mb-1.5 flex items-center justify-between">
+          <span>當前選中：<strong id="selectedTeamLabel" class="text-[#F6E05E]">第 1 組</strong></span>
+          <span id="selectedTeamTileLabel" class="text-[#8CE0B8]">位於：#00 START</span>
+        </div>
+        <div class="grid grid-cols-4 gap-1.5">
+          <button onclick="manualMove(-1)" class="bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold py-2 rounded-lg transition active:scale-95">
+            <i class="fa-solid fa-backward-step mr-0.5"></i>退1步
+          </button>
+          <button onclick="manualMove(1)" class="bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold py-2 rounded-lg transition active:scale-95">
+            進1步<i class="fa-solid fa-forward-step ml-0.5"></i>
+          </button>
+          <button onclick="manualMove(2)" class="bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold py-2 rounded-lg transition active:scale-95">
+            獎勵+2步
+          </button>
+          <button onclick="sendToJail()" class="bg-rose-900 hover:bg-rose-800 text-rose-100 text-xs font-bold py-2 rounded-lg transition active:scale-95" title="講出威權說教或負向嘲諷，直接送進第8格監獄">
+            <i class="fa-solid fa-lock mr-0.5"></i>送監獄
+          </button>
+        </div>
+      </div>
+    </aside>
+
+  </main>
+
+  <!-- IPPON 滿分全螢幕快閃慶祝橫幅 -->
+  <div id="ipponOverlay" onclick="closeIpponBanner()" class="fixed inset-0 bg-black/75 z-50 hidden items-center justify-center cursor-pointer p-4">
+    <div class="ippon-animate bg-gradient-to-b from-yellow-300 via-amber-400 to-orange-500 border-8 border-white rounded-3xl px-12 py-8 text-center shadow-[0_0_80px_rgba(250,204,21,0.9)] max-w-2xl">
+      <div class="inline-block bg-red-600 text-white font-black text-lg px-4 py-1 rounded-full mb-3 shadow">
+        🌟 悅思人滿分神轉折 🌟
+      </div>
+      <h2 id="ipponTitle" class="text-6xl md:text-7xl font-black text-slate-950 tracking-tighter drop-shadow-sm mb-3">
+        IPPON！
+      </h2>
+      <p id="ipponSubtitle" class="text-2xl font-black text-slate-900 bg-white/90 px-6 py-2.5 rounded-xl shadow-inner">
+        請直接去坐高麗菜煮蛋那桌（ㄅ級分）！
+      </p>
+      <p class="text-xs font-bold text-slate-900 mt-4 opacity-75">（點擊任意處關閉）</p>
+    </div>
+  </div>
+
+  <!-- 圖片大喜利：全螢幕放大看圖 Lightbox -->
+  <div id="imageLightbox" onclick="closeImageLightbox()" class="fixed inset-0 bg-black/90 z-50 hidden flex-col items-center justify-center p-4 cursor-zoom-out">
+    <div class="max-w-4xl w-full bg-[#162A22] border-4 border-[#F6E05E] rounded-3xl overflow-hidden shadow-2xl" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between px-6 py-3 bg-[#0F172A] border-b border-slate-700">
+        <span class="text-[#F6E05E] font-black text-lg"><i class="fa-solid fa-camera-retro mr-2"></i>圖片大喜利：看圖說出一句好笑的話！</span>
+        <button onclick="closeImageLightbox()" class="text-white hover:text-rose-400 text-2xl font-black"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="relative bg-black flex items-center justify-center max-h-[65vh] overflow-hidden">
+        <img id="lightboxImg" src="" alt="圖片大喜利" class="max-h-[65vh] w-auto object-contain">
+      </div>
+      <div class="p-5 bg-[#FAF8F5] text-[#162A22]">
+        <p id="lightboxPrompt" class="text-xl md:text-2xl font-black leading-snug"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 全班共鬥批次加分 Modal -->
+  <div id="coopModal" class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center p-4">
+    <div class="bg-[#162A22] border-2 border-[#8CE0B8] rounded-2xl max-w-lg w-full p-6 shadow-2xl">
+      <div class="flex justify-between items-center border-b border-[#2D4A3E] pb-3 mb-4">
+        <h3 class="text-xl font-black text-[#FAF8F5]"><i class="fa-solid fa-bolt text-[#F6E05E] mr-2"></i>全班共鬥搶答：批次頒發獎勵</h3>
+        <button onclick="closeCoopModal()" class="text-slate-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <p class="text-sm text-slate-300 mb-3">在「大喜利」或「機會／命運」全班共鬥時，勾選表現優異的組別，一鍵同時加分並前進！</p>
+      <div id="coopTeamCheckboxes" class="grid grid-cols-2 gap-2.5 mb-5">
+        <!-- JS 動態生成勾選框 -->
+      </div>
+      <div class="flex justify-end gap-2.5">
+        <button onclick="applyCoopReward(1, 0)" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-xl text-sm transition">
+          勾選組別 +1 ㄅ級分
+        </button>
+        <button onclick="applyCoopReward(2, 1)" class="bg-[#E05A47] hover:bg-[#d04a37] text-white font-black px-4 py-2 rounded-xl text-sm shadow-lg transition">
+          🔥 勾選組別 +2分 ＆ 前進1步！
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 組別設定 Modal -->
+  <div id="teamModal" class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center p-4">
+    <div class="bg-[#162A22] border-2 border-[#8CE0B8] rounded-2xl max-w-xl w-full p-6 shadow-2xl">
+      <div class="flex justify-between items-center border-b border-[#2D4A3E] pb-3 mb-4">
+        <h3 class="text-xl font-black text-[#FAF8F5]"><i class="fa-solid fa-users-gear text-[#8CE0B8] mr-2"></i>自訂組別名稱與吉祥物代表</h3>
+        <button onclick="closeTeamModal()" class="text-slate-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div id="teamEditList" class="grid grid-cols-2 gap-3 max-h-80 overflow-y-auto mb-5 pr-1">
+        <!-- JS 生成編輯欄位 -->
+      </div>
+      <div class="flex justify-end gap-3">
+        <button onclick="closeTeamModal()" class="bg-slate-700 hover:bg-slate-600 text-white font-bold px-4 py-2 rounded-xl text-sm">取消</button>
+        <button onclick="saveTeamSettings()" class="bg-[#8CE0B8] hover:bg-emerald-300 text-[#162A22] font-black px-5 py-2 rounded-xl text-sm">儲存設定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 重置確認 Modal -->
+  <div id="resetModal" class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center p-4">
+    <div class="bg-[#162A22] border-2 border-rose-500 rounded-2xl max-w-md w-full p-6 shadow-2xl text-center">
+      <div class="w-12 h-12 rounded-full bg-rose-900/60 text-rose-300 flex items-center justify-center mx-auto mb-3 text-2xl">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <h3 class="text-xl font-black text-white mb-2">確定要重置所有組別位置與分數嗎？</h3>
+      <p class="text-sm text-slate-300 mb-5">所有組別代表將回到 #00 START 起點，分數歸零。</p>
+      <div class="flex justify-center gap-3">
+        <button onclick="closeResetModal()" class="bg-slate-700 hover:bg-slate-600 text-white font-bold px-5 py-2 rounded-xl text-sm">取消</button>
+        <button onclick="confirmResetGame()" class="bg-rose-600 hover:bg-rose-500 text-white font-black px-5 py-2 rounded-xl text-sm">確定重置</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🎓 學生出題 / 上傳梗圖工坊 Modal -->
+  <div id="studentQuestionModal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4">
+    <div class="bg-[#162A22] border-2 border-[#F6E05E] rounded-2xl max-w-2xl w-full p-6 shadow-2xl max-h-[92vh] flex flex-col">
+      <div class="flex justify-between items-center border-b border-[#2D4A3E] pb-3 mb-3">
+        <div>
+          <h3 class="text-xl font-black text-[#FAF8F5] flex items-center gap-2">
+            <i class="fa-solid fa-wand-magic-sparkles text-[#F6E05E]"></i>
+            🎓 悅思人出題工坊：讓學生自己出題＆上傳爆笑梗圖！
+          </h3>
+          <p class="text-xs text-[#8CE0B8] mt-0.5">支援現場直接上傳相簿梗圖，或從 Google 表單／Padlet 一鍵批次匯入全班 40 人題目</p>
+        </div>
+        <button onclick="closeStudentQuestionModal()" class="text-slate-400 hover:text-white text-2xl"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <!-- 模式切換 Tabs -->
+      <div class="flex gap-2 mb-4 border-b border-[#2D4A3E] pb-2.5">
+        <button id="tabBtnSingle" onclick="switchCreatorTab('single')" class="bg-[#E05A47] text-white font-black px-4 py-1.5 rounded-xl text-sm shadow transition">
+          📸 模式一：單題＆相簿梗圖上傳
+        </button>
+        <button id="tabBtnBatch" onclick="switchCreatorTab('batch')" class="bg-slate-800 text-slate-300 hover:bg-slate-700 font-bold px-4 py-1.5 rounded-xl text-sm transition">
+          📥 模式二：全班 40 人題目批次匯入（Google表單/共編）
+        </button>
+      </div>
+
+      <!-- Tab 1: 單題與圖片上傳 -->
+      <div id="creatorTabSingle" class="space-y-3.5 overflow-y-auto pr-1 flex-1">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-[#8CE0B8] mb-1">1. 出題組別／出題者暱稱：</label>
+            <select id="sqAuthor" class="w-full bg-[#0F172A] border border-slate-600 rounded-xl px-3 py-2 text-sm font-bold text-white">
+              <option value="第1組 完美鱷魚隊">🐊 第1組 完美鱷魚隊 出題</option>
+              <option value="第2組 卡皮巴拉隊">🦦 第2組 卡皮巴拉隊 出題</option>
+              <option value="第3組 生氣河豚隊">🐡 第3組 生氣河豚隊 出題</option>
+              <option value="第4組 拆解暴龍隊">🦖 第4組 拆解暴龍隊 出題</option>
+              <option value="第5組 大嘴鯨魚隊">🐳 第5組 大嘴鯨魚隊 出題</option>
+              <option value="第6組 友誼紅鶴隊">🦩 第6組 友誼紅鶴隊 出題</option>
+              <option value="第7組 深海章魚隊">🐙 第7組 深海章魚隊 出題</option>
+              <option value="第8組 快樂火龍隊">🐲 第8組 快樂火龍隊 出題</option>
+              <option value="特教系神秘大魔王">👑 特教系神秘大魔王 出題</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-[#8CE0B8] mb-1">2. 要放進哪一個大富翁關卡格？</label>
+            <select id="sqTileIndex" class="w-full bg-[#0F172A] border border-slate-600 rounded-xl px-3 py-2 text-sm font-bold text-[#F6E05E]">
+              <!-- 由 JS 填入 16 格選項 -->
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-[#8CE0B8] mb-1">3. 題目內容（看圖配話情境、三拍誇誇主題、命運崩潰狀況或繞口令）：</label>
+          <textarea id="sqPromptText" rows="3" placeholder="例如：當你在實習教室不小心放了一個超響的屁，全班安靜看著你，請看圖配出一句最優雅的挽尊台詞！" class="w-full bg-[#0F172A] border border-slate-600 rounded-xl p-3 text-sm font-bold text-white focus:border-[#F6E05E] outline-none"></textarea>
+        </div>
+
+        <div class="bg-[#0F172A]/90 border border-slate-700 rounded-xl p-3.5 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold text-[#F6E05E] flex items-center gap-1.5">
+              <i class="fa-solid fa-image"></i> 4. 附加搞笑圖片／梗圖（選填，「圖片大喜利」必備！）
+            </label>
+            <button onclick="clearUploadedImage()" class="text-xs text-rose-400 hover:underline font-bold">清除圖片</button>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 items-center">
+            <label class="flex items-center justify-center gap-2 bg-emerald-800/70 hover:bg-emerald-700 text-white font-bold py-2 px-3 rounded-xl cursor-pointer text-xs border border-emerald-400/40 transition text-center">
+              <i class="fa-solid fa-upload"></i> 📁 從電腦／手機相簿選取圖片
+              <input type="file" id="sqImageFile" accept="image/*" onchange="handleLocalImageUpload(event)" class="hidden">
+            </label>
+            <input type="text" id="sqImageUrl" placeholder="或直接貼上網路圖片網址 (https://...)" oninput="previewUrlImage(this.value)" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white w-full">
+          </div>
+          <!-- 圖片預覽框 -->
+          <div id="sqImagePreviewBox" class="hidden items-center gap-3 pt-2">
+            <img id="sqImagePreview" src="" alt="預覽圖" class="w-24 h-16 object-cover rounded-lg border-2 border-[#F6E05E]">
+            <span class="text-xs text-emerald-300 font-bold"><i class="fa-solid fa-circle-check mr-1"></i>圖片已載入！送出後可直接在舞台中央全螢幕放大！</span>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap justify-end gap-2.5 pt-2">
+          <button onclick="submitStudentQuestion(false)" class="bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-4 py-2.5 rounded-xl text-sm shadow transition">
+            📥 存入該格題庫（待抽）
+          </button>
+          <button onclick="submitStudentQuestion(true)" class="bg-gradient-to-r from-[#F6E05E] to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 font-black px-5 py-2.5 rounded-xl text-sm shadow-lg transition">
+            🚀 立即送出並切換到舞台中央開玩！
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab 2: 全班 40 人批次貼上匯入 -->
+      <div id="creatorTabBatch" class="hidden space-y-3 overflow-y-auto pr-1 flex-1">
+        <div class="bg-[#0F172A] border border-[#8CE0B8]/30 rounded-xl p-3 text-xs text-slate-200 space-y-1">
+          <p class="font-black text-[#F6E05E] text-sm"><i class="fa-solid fa-lightbulb mr-1"></i>老師如何讓全班 40 人同時用手機出題？</p>
+          <p>1. 請各組在 <b>Google 試算表共編、Padlet 或 Line 群組</b> 寫下他們設計的題目。</p>
+          <p>2. 老師直接複製整欄文字貼到下方框框（<b>一行一題</b>），選擇要匯入哪一格（或自動分配），一秒完成全班題庫上傳！</p>
+          <p class="text-[#8CE0B8]">💡 進階格式（選用）：若寫成 <code>格號 | 組別 | 題目文字 | 圖片網址(選填)</code>，系統會自動分發到對應格子！</p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <label class="text-xs font-bold text-[#8CE0B8] shrink-0">預設匯入目標關卡：</label>
+          <select id="batchTargetTile" class="bg-[#0F172A] border border-slate-600 rounded-xl px-3 py-1.5 text-xs font-bold text-[#F6E05E] flex-1">
+            <option value="auto">🔄 自動平均分配到各個大喜利／機會／命運格</option>
+          </select>
+        </div>
+
+        <textarea id="batchQuestionsInput" rows="6" placeholder="每行貼入一題，例如：&#10;第1組 | 當你在電梯裡遇到暗戀對象，肚子卻發出超大咕嚕聲，怎麼一句話挽尊？&#10;第2組 | 果園、菜園、特教園！請在三拍內說出特教系學生最性感的瞬間！&#10;4 | 第3組 | 看這張圖說出早八點名時的內心OS | https://images.unsplash.com/photo-1517849845537-4d257902454a?w=800" class="w-full bg-[#0F172A] border border-slate-600 rounded-xl p-3 text-xs font-mono text-white focus:border-[#F6E05E] outline-none"></textarea>
+
+        <div class="flex justify-end gap-2.5">
+          <button onclick="importBatchStudentQuestions()" class="bg-[#E05A47] hover:bg-[#d04a37] textwhite font-black px-5 py-2.5 rounded-xl text-sm shadow-lg transition">
+            <i class="fa-solid fa-file-import mr-1"></i> 一鍵批次匯入學生題庫
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ☁️ 雲端同步與 GitHub / Vercel × Google 雲端部署中心 Modal -->
+  <div id="cloudSyncModal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4">
+    <div class="bg-[#162A22] border-2 border-sky-400 rounded-2xl max-w-3xl w-full p-6 shadow-2xl max-h-[92vh] flex flex-col">
+      <div class="flex justify-between items-center border-b border-[#2D4A3E] pb-3 mb-3">
+        <div>
+          <h3 class="text-xl font-black text-[#FAF8F5] flex items-center gap-2">
+            <i class="fa-solid fa-cloud text-sky-400"></i>
+            ☁️ 雲端自動存檔 ＆ Google 雲端 × GitHub / Vercel 部署中心
+          </h3>
+          <p class="text-xs text-[#8CE0B8] mt-0.5">解決重新整理消失問題！支援雲端即時同步、Google 表單題庫自動抓取、以及專案狀態檔備份</p>
+        </div>
+        <button onclick="closeCloudSyncModal()" class="text-slate-400 hover:text-white text-2xl"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <!-- 頁籤切換 -->
+      <div class="flex flex-wrap gap-2 mb-4 border-b border-[#2D4A3E] pb-2.5">
+        <button id="cloudTabBtnBackup" onclick="switchCloudTab('backup')" class="bg-sky-600 text-white font-black px-3.5 py-1.5 rounded-xl text-xs md:text-sm shadow transition">
+          💾 1. 即時雲端狀態 ＆ Google Drive 檔案備份
+        </button>
+        <button id="cloudTabBtnSheet" onclick="switchCloudTab('sheet')" class="bg-slate-800 text-slate-300 hover:bg-slate-700 font-bold px-3.5 py-1.5 rounded-xl text-xs md:text-sm transition">
+          📊 2. 串接 Google 表單 / 試算表 (CSV 題庫同步)
+        </button>
+        <button id="cloudTabBtnDeploy" onclick="switchCloudTab('deploy')" class="bg-slate-800 text-slate-300 hover:bg-slate-700 font-bold px-3.5 py-1.5 rounded-xl text-xs md:text-sm transition">
+          🚀 3. GitHub / Vercel 部署 ＆ Google Apps Script 後端
+        </button>
+      </div>
+
+      <!-- Tab 1: 雲端狀態與 JSON 匯出/匯入 -->
+      <div id="cloudTabBackup" class="space-y-4 overflow-y-auto pr-1 flex-1">
+        <div class="bg-[#0F172A] border border-sky-500/40 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div class="flex items-center gap-2">
+              <span id="modalCloudBadge" class="bg-emerald-500 text-slate-950 text-xs font-black px-2.5 py-0.5 rounded-full">🟢 雲端即時同步啟動中</span>
+              <span class="text-sm font-black text-white">重新整理頁面會自動還原 8 組位置、分數與學生題庫！</span>
+            </div>
+            <p class="text-xs text-slate-300 mt-1">每次擲骰子、加分或新增學生題目時，系統都會自動寫入雲端資料庫。</p>
+          </div>
+          <button onclick="forceSaveToCloudNow()" class="bg-sky-600 hover:bg-sky-500 text-white font-black px-4 py-2 rounded-xl text-xs shadow transition">
+            <i class="fa-solid fa-cloud-arrow-up mr-1"></i> 立即手動同步至雲端
+          </button>
+        </div>
+
+        <div class="bg-[#0F172A]/80 border border-slate-700 rounded-xl p-4 space-y-3">
+          <h4 class="text-sm font-black text-[#F6E05E] flex items-center gap-1.5">
+            <i class="fa-brands fa-google-drive"></i> Google 雲端硬碟（.json 進度備份檔）匯出與還原
+          </h4>
+          <p class="text-xs text-slate-300">若您將此 HTML 放到 GitHub Pages / Vercel 或在沒有網路的教室上課，可隨時把當前「8組位置＋分數＋全班自創題庫（含圖片）」打包下載成一個 <code>.json</code> 檔存進您的 Google Drive，下次上課一秒載入還原！</p>
+          <div class="flex flex-wrap gap-3 pt-1">
+            <button onclick="exportGameBackupJson()" class="bg-emerald-700 hover:bg-emerald-600 text-white font-black px-4 py-2.5 rounded-xl text-xs md:text-sm shadow flex items-center gap-1.5 transition">
+              <i class="fa-solid fa-download"></i> 📥 下載完整進度備份檔 (.json)
+            </button>
+            <label class="bg-amber-600 hover:bg-amber-500 text-white font-black px-4 py-2.5 rounded-xl text-xs md:text-sm shadow flex items-center gap-1.5 cursor-pointer transition">
+              <i class="fa-solid fa-upload"></i> 📂 從 Google Drive 載入備份檔 (.json)
+              <input type="file" accept=".json" onchange="importGameBackupJson(event)" class="hidden">
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Google 表單 / Google 試算表 CSV 即時抓取 -->
+      <div id="cloudTabSheet" class="hidden space-y-3.5 overflow-y-auto pr-1 flex-1">
+        <div class="bg-[#0F172A] border border-emerald-500/40 rounded-xl p-3.5 text-xs text-slate-200 space-y-1.5">
+          <p class="font-black text-[#8CE0B8] text-sm"><i class="fa-solid fa-table mr-1"></i>如何讓 40 位學生用手機填 Google 表單，大富翁一秒自動抓題？</p>
+          <ol class="list-decimal list-inside space-y-1 text-slate-300">
+            <li>建立一個 Google 表單，設定 4 個欄位：<b>① 組別暱稱、② 關卡格號 (0~15)、③ 題目文字、④ 圖片網址 (選填)</b>。</li>
+            <li>打開表單連結的「Google 試算表」，點選左上角 <b>「檔案 ➔ 共用 ➔ 發佈到網路」</b>。</li>
+            <li>選擇 <b>「逗號分隔值 (.csv)」</b> 並複製網址貼到下方，上課時按一下就能把全班手機提交的題目全部同步進來！</li>
+          </ol>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-[#8CE0B8] mb-1">貼上 Google 試算表「發佈到網路」的 CSV 連結：</label>
+          <div class="flex gap-2">
+            <input type="text" id="googleSheetCsvUrl" placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv" class="flex-1 bg-[#0F172A] border border-slate-600 rounded-xl px-3 py-2 text-xs text-white focus:border-sky-400 outline-none">
+            <button onclick="syncFromGoogleSheetCsv()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-black px-4 py-2 rounded-xl text-xs shadow shrink-0 transition">
+              <i class="fa-solid fa-rotate mr-1"></i> 立即從試算表抓題
+            </button>
+          </div>
+          <p id="csvSyncResultMsg" class="text-xs text-[#F6E05E] font-bold mt-1.5"></p>
+        </div>
+      </div>
+
+      <!-- Tab 3: GitHub / Vercel 部署與 Google Apps Script 雙向資料庫 -->
+      <div id="cloudTabDeploy" class="hidden space-y-3.5 overflow-y-auto pr-1 flex-1">
+        <div class="bg-[#0F172A] border border-indigo-500/40 rounded-xl p-3.5 text-xs text-slate-200 space-y-2">
+          <p class="font-black text-sky-300 text-sm"><i class="fa-brands fa-github mr-1"></i>GitHub Pages / Vercel 極速部署 ＋ Google Apps Script 免費雲端資料庫</p>
+          <p class="text-slate-300">1. <b>部署前端網頁：</b>將本檔案存為 <code>index.html</code> 上傳至 GitHub Repository，開啟 <b>Settings ➔ Pages</b>（或匯入 <b>Vercel</b>），10 秒即可產生專屬網址（如 <code>https://khtatung-monopoly.vercel.app</code>）。</p>
+          <p class="text-slate-300">2. <b>綁定 Google 雲端試算表自動存檔：</b>在您的 Google 試算表點選 <b>「擴充功能 ➔ Apps Script」</b>，貼上下方 15 行程式碼並點選「部署為網頁應用程式（所有人皆可存取）」，把網址貼回下方即可在 Vercel 上永久保存進度！</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-[#8CE0B8] mb-1">選填：貼上您的 Google Apps Script 網頁應用程式網址 (Web App URL)：</label>
+          <div class="flex gap-2">
+            <input type="text" id="gasWebAppUrl" placeholder="https://script.google.com/macros/s/AKfycb.../exec" class="flex-1 bg-[#0F172A] border border-slate-600 rounded-xl px-3 py-2 text-xs text-white focus:border-sky-400 outline-none">
+            <button onclick="loadStateFromGasWebhook()" class="bg-sky-600 hover:bg-sky-500 text-white font-bold px-3 py-2 rounded-xl text-xs shrink-0">從 GAS 讀取</button>
+            <button onclick="saveStateToGasWebhook()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-2 rounded-xl text-xs shrink-0">存入 GAS</button>
+          </div>
+        </div>
+
+        <div class="bg-slate-950 border border-slate-700 rounded-xl p-3 relative">
+          <div class="flex justify-between items-center mb-1">
+            <span class="text-[11px] font-bold text-amber-300">📋 Google Apps Script 雲端存取程式碼（貼入 Google 試算表即可當免費後端）：</span>
+            <button onclick="copyGasCode()" class="bg-slate-800 hover:bg-slate-700 text-white text-[11px] font-bold px-2.5 py-1 rounded border border-slate-600">
+              <i class="fa-regular fa-copy mr-1"></i>複製程式碼
+            </button>
+          </div>
+          <pre id="gasCodeBlock" class="text-[11px] text-emerald-300 font-mono overflow-x-auto leading-relaxed">function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("State") || SpreadsheetApp.getActiveSpreadsheet().insertSheet("State");
+  sheet.getRange("A1").setValue(e.postData.contents);
+  sheet.getRange("B1").setValue(new Date());
+  return ContentService.createTextOutput(JSON.stringify({status:"ok"})).setMimeType(ContentService.MimeType.JSON);
+}
+function doGet(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("State");
+  var data = sheet ? sheet.getRange("A1").getValue() : "{}";
+  return ContentService.createTextOutput(data).setMimeType(ContentService.MimeType.JSON);
+}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**************************************************************
+     * 1. 簡報第 13 頁 16 格大富翁棋盤資料定義 (順時針 Index 0 ~ 15)
+     *    每一關皆擴充至 8 道多元爆笑題目（共 128 題），圖片大喜利內建 16 張爆笑圖！
+     **************************************************************/
+    const BOARD_TILES = [
+      {
+        index: 0,
+        row: 1, col: 6,
+        title: "START",
+        subtitle: "悅思人起點出發",
+        bg: "#F6E05E", border: "#FFFFFF", textColor: "#1A202C", subColor: "#744210",
+        mode: "起點精神補給站（8題）",
+        category: "START",
+        desc: "各組悅思人整裝出發！經過或停留起點可抽一題完成全組破冰任務！",
+        prompts: [
+          "🌟 【第 1 題｜悅思人宣誓】請全組一起比出「頭 Head × 心 Heart × 手 Hand」動作，大喊一聲：「Aal Izz Well（一切皆好）！」即可獲得 +1 ㄅ級分！",
+          "🌟 【第 2 題｜雄中反差萌應援】請全組用最粗獷或最反差的嗓音大喊：「老師醬～嗨！比起考 100 分，我們更喜歡勇敢試錯的自己！」",
+          "🌟 【第 3 題｜從從容容精神喊話】請全組拍桌大喊：「我們這組今天本來應該從從容容、游刃有餘，絕對不會連滾帶爬！」",
+          "🌟 【第 4 題｜卡皮巴拉佛系微笑】請全組 5 人同時擺出「水豚君（卡皮巴拉）頂橘子」的最淡定微笑定格 3 秒鐘，誰先笑場扣 1 分！",
+          "🌟 【第 5 題｜高麗菜煮蛋那桌宣言】請全組一起指向終點大喊：「這學期的創意教具大獎，請直接保送我們去坐高麗菜煮蛋那桌！」",
+          "🌟 【第 6 題｜吉伊卡哇烏薩奇附體】請全組 5 人同時模仿烏薩奇（Usagi）高舉雙手大喊一聲：「呀哈！嗚啦！」釋放本週所有作業壓力！",
+          "🌟 【第 7 題｜黑白大廚晉級宣言】請全組雙手交叉抱胸，用最拽的米其林主廚語氣對隔壁組說：「你們的笑點熟度不夠——保留！我們先過關了！」",
+          "🌟 【第 8 題｜無偶包鬼臉大合照】破除碩論發現的「怕被笑偶包」！請全組 5 人同時對著講台擺出「最沒偶包的搞笑鬼臉」維持 3 秒，立刻 +2 分！"
+        ]
+      },
+      {
+        index: 1,
+        row: 2, col: 6,
+        title: "果園菜園海廢園",
+        subtitle: "特教系三拍誇誇",
+        bg: "#B7791F", border: "#F6E05E", textColor: "#FFFFFF", subColor: "#FEFCBF",
+        mode: "🎵 三拍節奏接龍（每人3拍內誇特教系一句，接不下輸！）",
+        category: "RHYTHM",
+        desc: "跟著節拍器「啪・啪・啪・誇！」每人在 3 拍內針對【特教系】說一句好話往下輪替，超時、卡詞或重複即淘汰！",
+        prompts: [
+          "💖 【第 1 題｜跟特教系談戀愛／當朋友的好處】「果園、菜園、特教園！」順時針輪替，每人 3 拍內說出一個「跟特教系交往或當朋友的超讚優點」（例：超有耐心、吵架會先分析冰山需求、情緒超穩定…），接不下去的輸！",
+          "🏫 【第 2 題｜一句話誇爆高師大特教系】「果園、菜園、特教園！」每人 3 拍內說出一個「讀高師大特教系最讓人羨慕的地方」（例：教授超幽默、同學人美心善、和平校區美食多…），卡詞或重複直接淘汰！",
+          "🦸 【第 3 題｜特教老師的隱藏超能力】「果園、菜園、特教園！」每人 3 拍內說出「特教老師比一般人更強的一項神技」（例：垃圾變黃金教具、一秒安撫崩潰小孩、寫IEP手速如飛…），往下輪替不准停！",
+          "🛠️ 【第 4 題｜特教系省錢智慧王誇誇】「果園、菜園、特教園！」每人 3 拍內說出「特教系學生拿到廢紙箱或海廢能做出的神級好事」（例：0元做出打地鼠機、浮球變沙鈴、保送高麗菜煮蛋那桌…），接不下去的輸！",
+          "🌈 【第 5 題｜對特教系夥伴與老師的彩虹屁】「果園、菜園、特教園！」每人 3 拍內對「班上特教系同學或陳教授、鄭老師」說一句真誠又好笑的讚美詞，誰先詞窮誰就輸！",
+          "🧠 【第 6 題｜特教人高 EQ 誇誇盤】「果園、菜園、特教園！」每人 3 拍內說出「當特教系學生遇到奧客或無理取鬧的人時，展現的高 EQ 反應」（例：微笑同理他、幫他做功能性行為評估、請他吃布丁…），接不下去的輸！",
+          "🎓 【第 7 題｜為什麼家長最愛特教系家教？】「果園、菜園、特教園！」每人 3 拍內說出一個「請特教系大學生當家教或陪玩的超值理由」（例：自備十種桌遊、再皮的小孩都治得住、會用買低賣高看亮點…），慢半拍淘汰！",
+          "✨ 【第 8 題｜一句話讓大一學弟妹愛上特教系】「果園、菜園、特教園！」假設今天是高中生面試，每人 3 拍內喊出一句「不讀特教系會後悔一輩子的理由」，接不下去的輸！"
+        ]
+      },
+      {
+        index: 2,
+        row: 3, col: 6,
+        title: "一定要輸猜拳",
+        subtitle: "U7 治療完美主義",
+        bg: "#C05621", border: "#F6E05E", textColor: "#FFFFFF", subColor: "#FEEBC8",
+        mode: "✊ 點將單挑格（破除想贏慣性，故意輸給莊家）",
+        category: "RPS_LOSE",
+        desc: "取材自碩論單元五～七「破除消極完美主義」！克制大腦想贏、想拿 100 分的慣性，在 1 秒內故意輸給老師！",
+        prompts: [
+          "✊ 【第 1 題｜慢出故意輸】點擊下方「莊家出拳器」，老師喊出拳的瞬間，各組代表必須在 1 秒內「故意出輸給老師的拳」！出贏或平手直接淘汰坐下！",
+          "👉 【第 2 題｜黑白配故意同向輸】傳統黑白配轉同方向算輸，現在反過來！老師喊「黑白配！」比出上下左右，你必須在 1 秒內「故意跟老師轉同一個方向（自投羅網）」才算過關！",
+          "🖐️ 【第 3 題｜五、十、十五故意輸拳】老師喊「五、十、十五、二十！」代表必須故意猜錯總和，並且開心地大喊一聲：「太棒了！我猜錯了！」",
+          "🔄 【第 4 題｜左手贏、右手輸腦力分裂拳】代表同時伸出雙手！老師出一拳，你的「右手必須故意輸給老師」，但嘴巴要大喊：「我贏了！」考驗大腦最高變通性！",
+          "🏆 【第 5 題｜連輸兩把＋犯錯價值金句】代表必須連續兩把猜輸老師，並在輸拳瞬間拍胸口大喊：「故意輸掉這一拳，是為了留 4 分空間防外星人抓走！Aal Izz Well！」",
+          "🐸 【第 6 題｜青蛙跳逆向拳】全場一起喊「剪刀、石頭、布！」代表不僅要出輸給老師的拳，還要「故意講錯自己的拳名」（例：手出剪刀，嘴巴大喊『我出布！』）！",
+          "💃 【第 7 題｜輸拳還要擺出勝利超模姿勢】代表在 1 秒內故意輸給老師後，必須立刻擺出一個「彷彿剛拿到奧運金牌」的時尚名模定格姿勢，誰最浮誇直接拿 2 分！",
+          "⚡ 【第 8 題｜終極三連敗挑戰】老師連續快速出三拳「石頭 ➔ 剪刀 ➔ 布」，代表必須在 3 秒內連續精準輸三次「剪刀 ➔ 布 ➔ 石頭」，全部輸對直接保送前進 2 步！"
+        ]
+      },
+      {
+        index: 3,
+        row: 4, col: 6,
+        title: "命運",
+        subtitle: "NG教室兩步救場",
+        bg: "#E53E3E", border: "#FFFFFF", textColor: "#FFFFFF", subColor: "#FFF5F5",
+        mode: "🔥 全班共鬥／代表演練（①幽默降溫話術 ＋ ②具體台階動作）",
+        category: "DESTINY",
+        desc: "抽中真實特教與大學高壓崩潰現場！必須完成：① 一句正向幽默降溫話術 (E) ＋ ② 一個具體 Operation 台階動作 (O)！",
+        prompts: [
+          "😭 【命運卡 1｜96分的世界末日（碩論U6）】完美主義資優生拿到 96 分考卷當場趴桌痛哭：「96分跟0分有什麼兩樣！我不要活了！」➔ 請用「誇張法（留4分防外星人結界）」逗笑他＋給出尋寶訂正動作 (O)！",
+          "👵 【命運卡 2｜把老師叫成阿嬤（碩論U1）】學生舉手大喊：「阿嬤！這題怎麼寫！」全班爆笑、學生臉紅想鑽進抽屜 ➔ 請用「自嘲裝傻法（乖孫～阿嬤心裡真冰涼）」接住人設＋順勢啟動全班 30 秒討論 (O)！",
+          "🐢 【命運卡 3｜海龜有幾顆牙齒？（碩論緒論）】台下小丑故意酸：「老師～用海廢做教具有夠幼稚，阿你有去算過海龜幾顆牙齒喔？」➔ 請誇他「保送高麗菜煮蛋那桌」並封為深海牙醫總監幫忙計時 (O)！",
+          "💔 【命運卡 4｜公開觀課教具原地解體】評審教授坐在台下，你手上的紙板教具突然「啪！」散開掉在地上 ➔ 請用「本來應該從從容容…這叫3D爆炸分解展示」自嘲挽尊＋請第一排學生幫忙限時拼回 (O)！",
+          "📱 【命運卡 5｜抓包學生上課偷滑手機傻笑】你講課講得正嗨，發現第一排學生低頭滑 Threads 笑到發抖 ➔ 請不傷和氣地用一句幽默話術把他拉回課堂，並派給他一個跟手機有關的查資料任務 (O)！",
+          "🍱 【命運卡 6｜營養午餐打翻青椒慘案】挑食的自閉症學生因為討厭青椒，不小心把整盆青椒撞翻在地上，全班尖叫怪他 ➔ 請用一句「青椒外星人逃亡中」幽默降溫，並發動全班 30 秒救援行動 (O)！",
+          "🎤 【命運卡 7｜投影機與麥克風同時罷工】你準備了一整週的精美簡報，結果上台時電腦藍白畫面、麥克風還發出超大尖叫聲 ➔ 請在 5 秒內講出一句自嘲金句穩住全場，並立刻切換成無插電互動 (O)！",
+          "💤 【命運卡 8｜早八第一排同學睡到打呼吹泡泡】你在台上試教，第一排同學睡到流口水還發出規律打呼聲，全班都在偷看他 ➔ 請用一句不傷自尊的幽默雙關語喚醒他，並給他一個瞬間提神的小任務 (O)！"
+        ]
+      },
+      {
+        index: 4,
+        row: 4, col: 5,
+        title: "圖片大喜利",
+        subtitle: "看圖配爆笑OS",
+        bg: "#DD6B20", border: "#F6E05E", textColor: "#FFFFFF", subColor: "#FEEBC8",
+        mode: "🖼️ 全班 8 組看圖共鬥（點擊圖片可放大！45秒搶喊 IPPON!）",
+        category: "PHOTO_OOGIRI",
+        desc: "請仔細看左方的新奇圖片，跳脫框架、結合最新時事或大學生活，配出一句讓全場笑翻的神級內心 OS！",
+        prompts: [
+          {
+            img: "https://images.unsplash.com/photo-1534567153574-2b12153a87f0?auto=format&fit=crop&w=900&q=80",
+            text: "📸 【看圖說出一句話 #1】禮拜天晚上 11:58 準備睡覺，突然打開教學平台發現明天早八要交一份教案跟低擬真原型，這隻狐猴腦中浮現的第一句話是什麼？"
+          },
+          {
+            img: "https://images.unsplash.com/photo-1511885663737-eea53f6d6187?auto=format&fit=crop&w=900&q=80",
+            text: "📸 【看圖說出一句話 #2】當你在火鍋店把生雞蛋打進高麗菜葉裡煮，隔壁桌這隻羊駝突然把臉湊到距離你 5 公分處盯著你看，請幫牠配一句最欠揍的台詞！"
+          },
+          {
+            img: "https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&fit=crop&w=900&q=80",
+            text: "📸 【看圖說出一句話 #3】早八鬧鐘已經響了第 8 次、本週已經趕了 3 個報告的巴哥犬同學，用這個眼神看著室友說了哪一句話？"
+          },
+          {
+            img: "https://images.unsplash.com/photo-1507666405895-422eee7d517f?auto=format&fit=crop&w=900&q=80",
+            text: "📸 【看圖說出一句話 #4】半夜 2 點偷偷打開宿舍公共冰箱想偷吃別人的布丁，結果門一開跟布丁主人四目相交！這隻松鼠要講哪句話才能一秒化解尷尬？"
+          },
+          {
+            img: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=900&q=80",
+            text: "📸 【看圖說出一句話 #5】小學生已經把教室吵到快掀開屋頂了，講台上這位「情緒穩定如卡皮巴拉」的貓咪實習老師，心裡真正的 OS 是什麼？"
+          },
+          {
+            img: "https://images.unsplash.com/photo-1518791841217-8f162f1e1131?auto=format&fit=crop&w=900&q=80",
+            text: "📸 【看圖說出一句話 #6】當教授說「這題很簡單，我們隨機抽一位同學上台回答」，而你剛好跟教授對上眼的那 0.1 秒，請幫這隻貓配一句內心慘叫！"
+          },
+          {
+            img: "https://images.unsplash.com/photo-1537151608828-ea2b11777ee8?auto=format&fit=crop&w=900&q=80",
+            text: "📸 【看圖說出一句話 #7】當你戴著耳機在宿舍忘情大唱〈沒出息（從從容容游刃有餘）〉，轉頭發現室友跟室友媽媽站在門口看了你 3 分鐘，這隻狗狗會說什麼？"
+          },
+          {
+            img: "https://images.unsplash.com/photo-1437622368342-7a3d73a34c8f?auto=format&fit=crop&w=900&q=80",
+            text: "📸 【看圖說出一句話 #8】這隻海龜在海裡游得好好的，突然看到人類把牠沒吃完的塑膠袋拿去擺盤做成「米其林深海食堂」，海龜開口講的第一句話是？"
+          }
+        ]
+      },
+      {
+        index: 5,
+        row: 4, col: 4,
+        title: "繞口令饒舌",
+        subtitle: "U3 紅鯉魚綠鯉魚",
+        bg: "#2F855A", border: "#F6E05E", textColor: "#FFFFFF", subColor: "#C6F6D5",
+        mode: "🎤 點將單挑格（抽各組代表一口氣唸完不吃螺絲）",
+        category: "TONGUE_TWISTER",
+        desc: "取材自碩論單元三最受歡迎的「傳奇繞口令」與快嘴挑戰！唸錯一個字或笑場就換下一組搶答！",
+        prompts: [
+          "🐟 【第 1 題｜碩論傳奇魔王：紅鯉魚與小綠驢（限時12秒）】「紅鯉魚家有頭小綠驢叫李屢屢，綠鯉魚家有頭小紅驢叫呂里里，紅鯉魚說他家的李屢屢要比綠鯉魚家的呂里里綠，綠鯉魚說他家的呂里里要比紅鯉魚家的李屢屢紅！」",
+          "📱 【第 2 題｜大同資優原創：電話與手機（限時10秒）】「鈿樺家有個鈿樺正在打電話，守琚家有個守琚正在打手機；鈿樺說他家的電話要比守琚家的手機好用，守琚說他家的手機要比鈿樺家的電話好用！」",
+          "🍜 【第 3 題｜和尚端湯上塔（限時10秒）】「老和尚端湯上塔，湯燙塔滑，湯灑湯燙老和尚腳，老和尚棄湯抱腳喊好燙，小和尚拿冰敷袋幫老和尚冰敷腳！」",
+          "🌊 【第 4 題｜海廢創生饒舌（限時10秒）】「澎湖海漂浮球做沙鈴，打狗海廢漁網纏海龜；不知是浮球沙鈴搖得響，還是海廢漁網纏得美，請去坐高麗菜煮蛋那桌喝涼水！」",
+          "🍇 【第 5 題｜特教系快嘴王（限時10秒）】「吃葡萄不吐葡萄皮，不吃葡萄倒吐葡萄皮；做教具不掉保麗龍屑，不做教具倒掉保麗龍屑！」",
+          "🐔 【第 6 題｜黑化肥發灰會揮發（限時10秒）】「黑化肥發灰，灰化肥發黑；黑化肥發灰會揮發，灰化肥揮發會發黑；黑化肥揮發發灰會花飛！」",
+          "🦁 【第 7 題｜石室詩士施氏嗜獅（限時10秒）】「石室詩士施氏，嗜獅，誓食十獅。施氏時時適市視獅。十時，適十獅適市！」",
+          "🧋 【第 8 題｜手搖飲店員崩潰饒舌（限時10秒）】「珍奶半糖微冰加布丁不加波霸，烏龍微糖少冰加波霸不加布丁；不知是半糖布丁甜，還是少冰波霸Q！」"
+        ]
+      },
+      {
+        index: 6,
+        row: 4, col: 3,
+        title: "大喜利",
+        subtitle: "職男×荒謬神回覆",
+        bg: "#DD6B20", border: "#F6E05E", textColor: "#FFFFFF", subColor: "#FEEBC8",
+        mode: "🔥 全班 8 組共鬥（45秒腦洞大開搶喊 IPPON!）",
+        category: "TEXT_OOGIRI",
+        desc: "《面白大丈夫 × 職男人生》既視感！面對「職場日常崩壞」與「極端荒謬設定」，用一句話給出讓全場笑翻的神回覆！",
+        prompts: [
+          "🔮 【第 1 題｜職場與日常崩壞篇】「算命師講了一句話讓你停下腳步，請問是什麼？」",
+          "💼 【第 2 題｜職場與日常崩壞篇】「老闆在全公司開會時點名你，接下來他說了什麼話讓你決定立刻遞辭呈？」",
+          "🍣 【第 3 題｜職場與日常崩壞篇】「去吃連鎖迴轉壽司，看到傳送帶上送來什麼東西，全場客人都震驚了？」",
+          "💻 【第 4 題｜職場與日常崩壞篇】「隔壁同事的電腦螢幕不小心露了出來，你發現他竟然在查什麼關鍵字？」",
+          "🧧 【第 5 題｜荒謬情境與極端設定篇】「白爛員工大喜利：年底了，做出什麼事的人絕對拿不到年終？」",
+          "♨️ 【第 6 題｜荒謬情境與極端設定篇】「這家三溫暖的規則太扯了！牆上的免責聲明寫了些什麼？」",
+          "🦸 【第 7 題｜荒謬情境與極端設定篇】「復仇者聯盟招募新英雄，你的超能力很強但極度廢，那是什麼？」",
+          "🐒 【第 8 題｜荒謬情境與極端設定篇】「唐僧去西天取經，結果在半路上因為什麼超瞎的原因決定解散團隊？」"
+        ]
+      },
+      {
+        index: 7,
+        row: 4, col: 2,
+        title: "果園菜園海廢園",
+        subtitle: "特教系三拍誇誇",
+        bg: "#B7791F", border: "#F6E05E", textColor: "#FFFFFF", subColor: "#FEFCBF",
+        mode: "🎵 三拍節奏接龍 II（每人3拍內誇特教系一句，接不下輸！）",
+        category: "RHYTHM",
+        desc: "進階版三拍節奏遊戲！啟動節拍器，每人必須在 3 拍內針對特教系或特殊生說出一句好話往下輪替！",
+        prompts: [
+          "💎 【第 1 題｜買低賣高誇誇盤：把缺點誇成天才！】「果園、菜園、特教園！」每人 3 拍內把一個「小孩常被罵的特質」用一句好話誇獎（例：坐不住＝動能發電機、愛頂嘴＝立法型領袖、愛發呆＝沉浸式醞釀大師…），接不下去的輸！",
+          "🚀 【第 2 題｜特教系跨界神人盤】「果園、菜園、特教園！」每人 3 拍內喊出一個「特教系練出來的功力可以稱霸的斜槓職業」（例：漫才吐槽王、密室逃脫設計師、情緒拆彈專家、玩具發明家…），往下輪替！",
+          "🏆 【第 3 題｜四字成語／流行梗誇特教系】「果園、菜園、特教園！」每人 3 拍內必須用「四個字或流行梗」讚美特教系（例：人美心善、普渡眾生、從從容容、游刃有餘、ㄅ級分天團…），重複或慢半拍出局！",
+          "🏠 【第 4 題｜為什麼每間宿舍都該配一位特教系室友？】「果園、菜園、特教園！」每人 3 拍內說出「擁有特教系室友的幸福好處」（例：失戀有人同理、自備熱熔膠百寶袋、半夜不發脾氣…），接不下去的輸！",
+          "⚡ 【第 5 題｜1.5倍速終極誇誇盤】節拍器加速！每人 3 拍內看著右手邊的特教系同學說出一句「聽了會心花怒放的具體優點」，誰先卡詞或笑場停頓就淘汰！",
+          "🎁 【第 6 題｜特教系百寶袋誇誇盤】「果園、菜園、特教園！」每人 3 拍內說出「特教系學生的書包裡總是可以神奇掏出什麼好東西幫大家救急」（例：雙面膠、集點貼紙、防滑墊、喉糖…），接不下去的輸！",
+          "🌟 【第 7 題｜資優與身障雙修超能力盤】「果園、菜園、特教園！」每人 3 拍內說出「同時懂資優創造力又懂身障共融設計的老師有多迷人」，卡詞或重複即淘汰！",
+          "🎉 【第 8 題｜未來教甄評審一秒愛上你盤】「果園、菜園、特教園！」每人 3 拍內對自己喊出一句「未來我去考教甄，評審一定錄取我的超強亮點」，給全班滿滿自信！"
+        ]
+      },
+      {
+        index: 8,
+        row: 4, col: 1,
+        title: "監獄",
+        subtitle: "負向嘲諷反省區",
+        bg: "#1A202C", border: "#FFFFFF", textColor: "#FFFFFF", subColor: "#FEB2B2",
+        mode: "🚫 幽默紅線警示區（將酸言改寫為正向幽默即可出獄！）",
+        category: "JAIL",
+        desc: "在課堂上不小心講出「傳統威權說教」或「負向嘲諷酸言（如：啊不就好棒棒）」就會被關進這裡！完成改寫即可保釋！",
+        prompts: [
+          "🔓 【保釋任務 1｜打破水壺現場】學生不小心把水壺撞翻灑滿地，傳統老師罵：「你手是有洞喔？笨手笨腳！」➔ 請改寫成一句「正向幽默＋給台階動作」即可出獄！",
+          "🔓 【保釋任務 2｜上台報告結巴現場】害羞組員上台報告緊張忘詞，台下有人偷笑說：「講話像蚊子叫，有夠解！」➔ 請用一句溫暖幽默替報告者解圍！",
+          "🔓 【保釋任務 3｜聯絡簿忘記帶現場】ADHD 學生連續三天忘記交聯絡簿，傳統老師酸：「你的腦袋也忘在家裡沒帶出來嗎？」➔ 請用幽默正向雙關改寫提醒方式！",
+          "🔓 【保釋任務 4｜美術勞作黏反現場】學生把海廢魚磁鐵的眼睛貼到尾巴上，同學嘲笑：「你眼睛脫窗喔？畫那什麼四不像！」➔ 請用水平思考重新定義這隻怪魚的優點！",
+          "🔓 【保釋任務 5｜分組抽籤被嫌棄現場】抽籤分組時，有人故意大嘆一口氣說：「吼～怎麼又是跟他在同一組，這學期完蛋了！」➔ 請身為老師的你用一句話瞬間翻轉氣氛！",
+          "🔓 【保釋任務 6｜跑步跌倒被笑現場】體育課動作協調較弱的學生跌倒，同學笑他：「哈哈大象跌倒地震了！」➔ 請用正向幽默幫跌倒學生挽回面子並教育全班！",
+          "🔓 【保釋任務 7｜發問被酸蠢問題現場】學生鼓起勇氣問了一個基本問題，卻被資優生同學酸：「連這個都不會，你是幼稚園喔？」➔ 請用愛因斯坦或名言幽默法化解！",
+          "🔓 【保釋任務 8｜擦黑板擦不到頂端現場】個子嬌小的學生擦黑板擦不到上面，被人取笑「矮冬瓜」➔ 請用一句幽默賦權並搭配一個低科技 Input 解法！"
+        ]
+      },
+      {
+        index: 9,
+        row: 3, col: 1,
+        title: "雙關大喜利",
+        subtitle: "U8 讚美商店造句",
+        bg: "#DD6B20", border: "#F6E05E", textColor: "#FFFFFF", subColor: "#FEEBC8",
+        mode: "🎁 全班共鬥（隨身物品 × 自我讚美雙關商店）",
+        category: "PUN_STORE",
+        desc: "復刻碩論單元八最受歡迎的「自我讚美雙關商店」（頁127、242）！抓手邊一樣物品賦予正向心理意義！",
+        prompts: [
+          "✏️ 【第 1 題｜文具盒雙關禮】請從桌上拿起「修正帶、橡皮擦、長尾夾或尺」任一樣，造出一句送給期中考焦慮同學的雙關讚美詞！（例：送你橡皮擦，擦掉所有小失誤！）",
+          "🌊 【第 2 題｜海廢創生雙關禮】請以「海廢圓浮球、漁網繩或寶特瓶蓋」為禮物，造出一句鼓勵挫折學生的雙關金句！（例：送你海廢浮球，就算被大浪拍下水也永遠能『浮』出水面！）",
+          "🧋 【第 3 題｜手搖飲與美食雙關禮】台灣人最愛諧音！請用「珍珠奶茶、高麗菜、雞排或蛋餅」造出一句送給實習老師的祝福雙關語！（例：送你高麗菜煮蛋，祝你教學點子永遠『高』人一等、好運完『蛋』不散！）",
+          "📱 【第 4 題｜3C 與充電雙關禮】請拿起桌上的「行動電源、充電線、耳機或手機支架」，30 秒內講出一句「功能雙關」送給隔壁組為他們打氣！",
+          "🔑 【第 5 題｜隨身口袋尋寶雙關禮】請掏出書包裡的「衛生紙、髮圈、鑰匙圈或雨傘」，賦予它一個最溫暖的心理韌性超能力並大聲送給自己！",
+          "👟 【第 6 題｜穿搭單品雙關禮】請指著自己身上的「眼鏡、手錶、襪子或布鞋」，造出一句誇獎自己本學期超認真上課的「自我讚美雙關語」！",
+          "🍬 【第 7 題｜超商零食雙關禮】如果要在期末發表前送給全班一人一包零食（如：乖乖、泡芙、洋芋片、口香糖），你要選哪一樣並寫什麼雙關賀詞？",
+          "🩹 【第 8 題｜急救箱心靈雙關禮】請用「OK繃、退熱貼、棉花棒或人工皮」造出一句專門治療「消極完美主義鱷魚」的幽默雙關處方籤！"
+        ]
+      },
+      {
+        index: 10,
+        row: 2, col: 1,
+        title: "一定要輸猜拳",
+        subtitle: "U7 治療完美主義",
+        bg: "#C05621", border: "#F6E05E", textColor: "#FFFFFF", subColor: "#FEEBC8",
+        mode: "✊ 點將單挑格 II（逆向思維與破除偶包大考驗）",
+        category: "RPS_LOSE",
+        desc: "第二次破除完美主義機會！大腦越緊繃越容易贏拳，只有放鬆保持彈性（Flexibility）才能精準輸拳！",
+        prompts: [
+          "✊ 【第 1 題｜極限 0.5 秒慢出輸拳】點擊下方「莊家出拳器」，代表必須在 0.5 秒內秒出輸給莊家的拳，並順勢擺出一個「輸得超驕傲」的超人姿勢！",
+          "🎤 【第 2 題｜猜輸還要喊出諧音梗】代表猜輸老師後，必須立刻用「石頭、剪刀、布」講出一句諧音好話（例：出布輸給剪刀➔「退一『布』海闊天空」！），完成直接 +2 分！",
+          "🙌 【第 3 題｜反差萌隊友救援賽】如果代表不小心猜贏了老師，全組另外 4 位隊員只要在 3 秒內一起對他大喊：「代表醬～嗨！就算不小心贏了我們也愛你！」即可免淘汰照拿分！",
+          "🤪 【第 4 題｜鬼臉猜拳大對決】破除碩論發現的「怕被笑偶包」！代表在出輸拳的瞬間，必須同時做出一個「毫無偶包的搞笑表情」，誰最放得開直接頒發 IPPON！",
+          "🔥 【第 5 題｜雙人同步輸拳考驗】該組派出 2 位代表同時站起來跟老師猜拳，兩人必須「同時輸給老師」且「出的拳不能一樣」（例：老師出石頭，一人出剪刀、另一人比愛心認輸）！",
+          "🕺 【第 6 題｜猜輸順勢跳科目三／應援舞】代表在猜輸老師的那一瞬間，必須絲滑接上一個 2 秒鐘的「搞笑舞蹈動作或啦啦隊應援手勢」，把輸拳變成個人舞台秀！",
+          "🗣️ 【第 7 題｜輸拳誇獎對手賽】代表故意出輸給老師後，必須立刻用最浮誇的語氣誇獎老師：「哇！老師這拳出得真是從從容容、游刃有餘！」",
+          "👑 【第 8 題｜全班起立生存淘汰賽】全班 40 人同時起立跟老師玩「一定要輸猜拳」連比三把！只要出贏或平手就坐下，最後還站著的「輸拳之王」幫該組直接 +3 分！"
+        ]
+      },
+      {
+        index: 11,
+        row: 1, col: 1,
+        title: "機會",
+        subtitle: "特教突發神救場",
+        bg: "#D53F8C", border: "#FFFFFF", textColor: "#FFFFFF", subColor: "#FFF5F7",
+        mode: "⚡ 機會翻盤格（幽默降溫 E ➔ 行動台階 O）",
+        category: "CHANCE",
+        desc: "危機就是轉機！遇到特教與共融現場的突發狀況，展現準教師的心理韌性與 TEC-PISCO 應變力！",
+        prompts: [
+          "😡 【機會卡 1｜作品黏歪揉爛大哭】ADHD 學生做海廢教具時不小心剪歪紙板，當場把作品摔在地上大吼：「我這麼笨乾脆不要做了！」➔ 請講出 1 句「畢卡索抽象派誇張讚美」＋ 1 個改造下一步 (O)！",
+          "🤢 【機會卡 2｜潔癖家長突襲檢查（W8魔王卡）】班親會時，一位家長指著你的海廢教具皺眉說：「老師，你拿海邊撿來的垃圾給小孩摸，不會有細菌嗎？」➔ 請用幽默與「親子科學潔淨護照」化解疑慮！",
+          "😴 【機會卡 3｜小汶熬夜到兩點不敢交作業（碩論U9）】完美主義學生因為覺得海報畫得不夠完美，寧可遲交也不敢拿出來 ➔ 請用「80分就很棒雙關禮＋最小可行第一步 (Immediate Step)」幫她破冰！",
+          "🔊 【機會卡 4｜浮球沙鈴變成全班噪音炸彈】你的海廢沙鈴太好玩了，結果學生上課一直偷搖，隔壁班老師過來抗議太吵 ➔ 請不動怒，用一個「木頭人特務遊戲規則」一秒讓全班安靜收好 (O)！",
+          "🙋 【機會卡 5｜一般生抗議特教生有特權】班上同學抗議：「為什麼只有他上課可以玩海廢釣魚教具，我們都要寫考卷？不公平！」➔ 請用「海廢博物館館長賦權法」創造雙贏融合！",
+          "🐜 【機會卡 6｜教室突然飛進一隻大蟑螂／大蜜蜂】你正在講解重要概念，突然一隻會飛的蟑螂停在黑板旁，全班尖叫暴動 ➔ 請用 1 句幽默時事台詞穩住軍心，並轉化為安全疏散或觀察步驟 (O)！",
+          "🎨 【機會卡 7｜學生把顏料塗在自己臉上裝浩克】美術共融課時，一位衝動型學生把綠色水彩塗滿整張臉大喊「我是綠巨人！」➔ 請不罵人，用幽默接梗並順勢帶他去洗手台完成任務 (O)！",
+          "🏆 【機會卡 8｜比賽落選全班氣氛低迷】你帶資優班參加科展或發明展，結果只拿到佳作沒進決賽，全班哭成一團覺得努力白費 ➔ 請用《KANO》或 Sternberg 買低賣高精神來一段幽默暖心演講！"
+        ]
+      },
+      {
+        index: 12,
+        row: 1, col: 2,
+        title: "圖片大喜利",
+        subtitle: "看圖說出一句話",
+        bg: "#DD6B20", border: "#F6E05E", textColor: "#FFFFFF", subColor: "#FEEBC8",
+        mode: "🖼️ 全班 8 組看圖共鬥 II（點擊圖片可放大！45秒搶喊 IPPON!）",
+        category: "PHOTO_OOGIRI",
+        desc: "第二波爆笑圖片大喜利！請看左方圖片，結合最新時事梗、大學生日常或特教現場，配出一句全場笑翻的台詞！",
+        prompts: [
+          {
+            img: "https://images.unsplash.com/photo-1543549790-8b5f4a028cfb?auto=format&fit=crop&w=900&q=80",
+            text: "📸 【看圖說出一句話 #1】當通識課分組報告的「隱形隊友」在整學期消失後，突然在發表前 5 分鐘傳訊息問：「請問我們這組題目是什麼？」請替這隻貓頭鷹配一句不帶髒字卻殺傷力滿點的回覆！"
+          },
+          {
+            img: "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=900&q=80",
+            text: "📸 【看圖說出一句話 #2】當評審教授問你：「請問你這個海廢紙板教具背後的理論基礎是什麼？」其實昨晚才用 15 分鐘拼出來的你，要怎麼用這個表情講出一句超專業的《黑白大廚》台詞？"
+          },
+          {
+            img: "https://images.unsplash.com/photo-1540573133985-87b6da6d54a9?auto=format&fit=crop&w=900&q=80",
+            text: "📸 【看圖說出一句話 #3】下課十分鐘看到你暗戀的人經過走廊，你旁邊的損友突然露出這副表情看著你，他嘴巴裡正在講哪一句風涼話？"
+          },
+          {
+            img: "https://images.unsplash.com/photo-1573865526739-10659fec78a5?auto=format&fit=crop&w=900&q=80",
+            text: "📸 【看圖說出一句話 #4】過年吃團圓飯時，親戚長輩又問：「讀特教系以後出來要幹嘛？薪水高不高？」請替這隻霸氣貓咪配一句讓親戚瞬間閉嘴又笑出來的幽默神回覆！"
+          },
+          {
+            img: "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=900&q=80",
+            text: "📸 【看圖說出一句話 #5】星期五下午最後一節下課鐘響的 0.01 秒，畫面左邊那隻飛起來的狗，對右邊那隻狗大喊了什麼？"
+          },
+          {
+            img: "https://images.unsplash.com/photo-1529778873920-4da4926a72c2?auto=format&fit=crop&w=900&q=80",
+            text: "📸 【看圖說出一句話 #6】月底最後一天全身只剩 50 元，看著室友在吃豪華大雞排配珍奶，這隻小貓咪準備用什麼「諧音雙關語」跟室友乞討一口雞排？"
+          },
+          {
+            img: "https://images.unsplash.com/photo-1535930891776-0c2dfb7fda1a?auto=format&fit=crop&w=900&q=80",
+            text: "📸 【看圖說出一句話 #7】這隻戴著眼鏡的狗狗教授，正在看你們組交上來的期末報告，請配一句牠一邊推眼鏡一邊講出的「刀子嘴豆腐心」評語！"
+          },
+          {
+            img: "https://images.unsplash.com/photo-1561037404-61cd46aa615b?auto=format&fit=crop&w=900&q=80",
+            text: "📸 【看圖說出一句話 #8】當老師說「今天我們不寫學習單，直接玩搞笑大富翁！」全班同學瞬間露出這隻小狗的表情，此時心裡冒出的第一句話是？"
+          }
+        ]
+      },
+      {
+        index: 13,
+        row: 1, col: 3,
+        title: "打油詩接唱",
+        subtitle: "U4 資優班歡迎歌",
+        bg: "#E53E3E", border: "#F6E05E", textColor: "#FFFFFF", subColor: "#FED7D7",
+        mode: "🎵 全班共鬥／代表接句（押韻順口溜與流行梗改編）",
+        category: "DOGGEREL",
+        desc: "取材自碩論單元四「大同資優打油詩」與單元八「流行歌詞接唱法」（頁120、236、244）！",
+        prompts: [
+          "📜 【第 1 題｜碩論經典打油詩接龍】大同資優生寫道：「上完了語文，大家都會寫作文；上完幽默課，大家全都笑呵呵！」請押韻接下一句：「上完創造力，＿＿＿＿＿＿＿＿！」",
+          "🎓 【第 2 題｜大一實習自嘲順口溜】請完成這首打油詩：「備課備到半夜三點鐘，以為上台會從從容容；結果教具＿＿＿＿＿，還好我有＿＿＿＿＿！」",
+          "🏫 【第 3 題｜碩論各大學出路打油詩改編】碩論學習單寫道：「台大畢業當台客、交大畢業當交警、師大畢業當師公（頁236）！」請改編出一句誇獎我們：「高師特教畢業＿＿＿＿＿＿＿＿！」",
+          "🔊 【第 4 題｜碩論單元九：功能性標點音效秀】請朗讀這句話，並把裡面的標點符號全部用「誇張人體音效」配音出來：「小汶熬夜到兩點【！】擦掉重畫十次【……】老師微笑拍拍她說【：】一切皆好【～♪】」",
+          "🎤 【第 5 題｜虎頭蛇尾古詩惡搞接唱（碩論頁244）】老師唸上句古詩，請接一句完全無厘頭的生活大實話！（例：「故人西辭黃鶴樓，煎魚不用太多油」➔ 請接：「床前明月光，＿＿＿＿＿＿！」或「春眠不覺曉，＿＿＿＿＿＿！」）",
+          "🐒 【第 6 題｜星期一猴子穿新衣改編大賽】請把傳統順口溜改成「特教大學生一週生存記」：「星期一早八笑嘻嘻，星期二報告＿＿＿＿，星期三教具＿＿＿＿！」",
+          "🎶 【第 7 題｜流行歌詞神接話（碩論頁244）】當班長大喊：「老師快來了！大家安靜不要再吵了！」請立刻唱出一句「跟安靜或裝乖有關的流行歌或兒歌歌詞」一秒接梗！",
+          "📢 【第 8 題｜高雄宜居城市誇張叫賣詞（碩論U9）】請模仿夜市叫賣或食尚玩家語氣，用 15 秒誇張推銷「高師大和平校區周邊的一樣美食」，講到全班流口水直接拿分！"
+        ]
+      },
+      {
+        index: 14,
+        row: 1, col: 4,
+        title: "雙關大喜利",
+        subtitle: "U8 讚美商店造句",
+        bg: "#DD6B20", border: "#F6E05E", textColor: "#FFFFFF", subColor: "#FEEBC8",
+        mode: "🎁 全班共鬥 II（買低賣高 × 台灣諧音梗命名大賽）",
+        category: "PUN_STORE",
+        desc: "結合第 3 週 Sternberg「買低賣高」與碩論單元三、四、八的諧音雙關創作！",
+        prompts: [
+          "🎁 【第 1 題｜買低賣高雙關禮 A】班上有個「上課一直停不下來狂拆原子筆」的 ADHD 男生，請送他一樣禮物並說出雙關讚美詞！（例：送你樂高扳手，因為你是未來的機械拆解總工程師！）",
+          "🎁 【第 2 題｜買低賣高雙關禮 B】班上有個「一定要照自己規則走、愛挑校規毛病」的立法型思考學生，請送他一份雙關讚美禮，把他的固執轉化為班級貢獻！",
+          "🌳 【第 3 題｜U4 笑樹／海笑／含笑草命名大賽】碩論學生把森林風公告欄取名「笑樹」、海洋風取名「海笑」、草原風取名「含笑草」。如果你們要在特教班設一個「失敗除錯展示角」，會取什麼諧音雙關名？",
+          "🍌 【第 4 題｜U3 字尾替換王】碩論學生把「小小兵」改成「小小冰山、小小兵荒馬亂」；把「名偵探柯南」改成「名偵探蚵農」。請以「吉伊卡哇」或「卡皮巴拉」為題，替換字尾創造 2 個爆笑新角色！",
+          "🏪 【第 5 題｜台灣諧音招牌創作】台灣街頭有「無餓不坐（麵店）」、「夾樂福（娃娃機）」。如果你們這組開一間「專門幫特教老師減壓的咖啡廳或按摩店」，店名要叫什麼諧音？",
+          "📛 【第 6 題｜幫史珍香取一個超霸氣諧音綽號（碩論U8）】除了「家中珍寶、憐香惜玉」之外，如果史珍香同學去競選學生會長，請幫她設計一句「利用名字諧音、聽起來超有氣勢」的競選口號！",
+          "🏅 【第 7 題｜期末專題「奇葩獎項」諧音命名】期末發表時，除了頒發第一名，請用台灣諧音梗設計一個「專門獎勵失敗最多次但越挫越勇組別」的搞笑獎項名稱！",
+          "💌 【第 8 題｜送給 8 年後自己的雙關時光膠囊】參考第一週簡報裡學生寫給鄭老師的 2032 年信件，請用一樣物品的雙關語，送給「未來已經當上特教老師的自己」一句祝福！"
+        ]
+      },
+      {
+        index: 15,
+        row: 1, col: 5,
+        title: "繞口令饒舌",
+        subtitle: "終點前快嘴衝刺",
+        bg: "#2F855A", border: "#F6E05E", textColor: "#FFFFFF", subColor: "#C6F6D5",
+        mode: "🎤 終點前衝刺格（全組齊唸或派快嘴代表 8 秒通關）",
+        category: "TONGUE_TWISTER",
+        desc: "距離完成一圈只差最後一步！用最快、最清楚的節奏完成饒舌挑戰即可衝線得分！",
+        prompts: [
+          "⚡ 【第 1 題｜TEC-PISCO 終極快嘴王（限時8秒）】請一口氣清楚唸完不卡詞：「T 瞄準靶、E 張開窗、C 收漏斗；P 找真需求、I 盤點廢材、S 想三條路、C 挑唯一解、O 除錯打補丁！」",
+          "🦁 【第 2 題｜笑山動物園諧音快嘴（限時8秒）】「高雄壽山有個壽山動物園，大同資優有個笑山動物園；來壽山看動物吃香蕉，來笑山聽笑話哈哈笑！」",
+          "🥚 【第 3 題｜高麗菜煮蛋繞口令（限時8秒）】「高麗菜葉煮雞蛋，雞蛋不黏高麗菜；吃高麗菜不吃鍋巴蛋，吃鍋巴蛋不如去坐高麗菜煮蛋那桌吃好蛋！」",
+          "🐊 【第 4 題｜臥房鱷魚看壁紙（限時8秒）】「臥房鱷魚愛看整齊花壁紙，花園玫瑰嚇跑臥房白鱷魚；別當只看壁紙的完美假鱷魚，要當花園裡笑呵呵的悅思人！」",
+          "🎓 【第 5 題｜前八週大師點名饒舌（限時8秒）】「Wallas 醞釀等豁朗，Sternberg 買低又賣高；Cropley 新奇要有效，狄波諾行動思考沒煩惱，高師特教一級棒！」",
+          "🐄 【第 6 題｜牛郎戀劉娘經典快嘴（限時8秒）】「牛郎年年戀劉娘，劉娘連連念牛郎；牛郎戀劉娘，劉娘念牛郎，郎戀娘來娘念郎！」",
+          "📦 【第 7 題｜低擬真紙箱做教具（限時8秒）】「拿廢紙箱剪紙板，剪完紙板貼磁鐵；紙板磁鐵變冰敷袋，冰敷袋變色真厲害！」",
+          "🌈 【第 8 題｜M.A.D. 星球衝線口訣（限時8秒）】「頭想好點子、心懷同理心、手做真教具；頭心手合一，我們就是創不同的 M.A.D. 行動悅思人！」"
+        ]
+      }
+    ];
+
+    /**************************************************************
+     * 2. 8 組學生預設資料 (40人 = 8組 x 5人) & 學生自創題狀態
+     **************************************************************/
+    let teams = [
+      { id: 1, name: "第1組 完美鱷魚隊", icon: "🐊", color: "#10B981", pos: 0, score: 0, laps: 0, inJail: false },
+      { id: 2, name: "第2組 卡皮巴拉隊", icon: "🦦", color: "#F59E0B", pos: 0, score: 0, laps: 0, inJail: false },
+      { id: 3, name: "第3組 生氣河豚隊", icon: "🐡", color: "#EC4899", pos: 0, score: 0, laps: 0, inJail: false },
+      { id: 4, name: "第4組 拆解暴龍隊", icon: "🦖", color: "#EF4444", pos: 0, score: 0, laps: 0, inJail: false },
+      { id: 5, name: "第5組 大嘴鯨魚隊", icon: "🐳", color: "#3B82F6", pos: 0, score: 0, laps: 0, inJail: false },
+      { id: 6, name: "第6組 友誼紅鶴隊", icon: "🦩", color: "#A855F7", pos: 0, score: 0, laps: 0, inJail: false },
+      { id: 7, name: "第7組 深海章魚隊", icon: "🐙", color: "#F97316", pos: 0, score: 0, laps: 0, inJail: false },
+      { id: 8, name: "第8組 快樂火龍隊", icon: "🐲", color: "#14B8A6", pos: 0, score: 0, laps: 0, inJail: false }
+    ];
+
+    let currentTeamIndex = 0; // 0 ~ 7
+    let currentViewTileIndex = 0; // 中央舞台目前顯示的格子編號
+    let currentPromptIndex = 0; // 該格子目前顯示的第幾題
+    let isRolling = false;
+    let lastDiceValue = 6;
+    let pickedMemberText = "點擊抽 1～5 號隊員";
+    let rpsDealerText = "點擊喊「我要出…」";
+    let timerSeconds = 45;
+    let timerInterval = null;
+
+    // 學生自創題統計與暫存圖片
+    let totalStudentQuestionsAdded = 0;
+    let uploadedLocalImageDataUrl = "";
+    let customStudentPromptsRecord = []; // 記錄所有學生新增的題目，供雲端自動同步與還原
+
+    // 「果園菜園海廢園」三拍節奏器狀態
+    let rhythmStep = 0; // 0: 準備, 1: 啪(1), 2: 啪(2), 3: 啪(3), 4: 誇特教系！
+    let rhythmFastMode = false;
+
+    /**************************************************************
+     * 3. Web Audio API 綜藝音效合成器 (免外部音源檔)
+     **************************************************************/
+    let audioCtx = null;
+    function getAudioCtx() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function playSound(type) {
+      try {
+        const ctx = getAudioCtx();
+        const now = ctx.currentTime;
+
+        if (type === 'tick') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(520 + Math.random() * 280, now);
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.06);
+        } else if (type === 'step') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(360, now);
+          osc.frequency.exponentialRampToValueAtTime(680, now + 0.11);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.12);
+        } else if (type === 'ippon') {
+          // 模擬日本 IPPON 號角與太鼓和弦音效
+          const notes = [523.25, 659.25, 783.99, 1046.5];
+          notes.forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.055);
+            gain.gain.setValueAtTime(0.18, now + idx * 0.055);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.055 + 0.55);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + idx * 0.055);
+            osc.stop(now + idx * 0.055 + 0.55);
+          });
+        } else if (type === 'laugh') {
+          // 歡快上揚琶音
+          const notes = [440, 554.37, 659.25, 880, 1108.73];
+          notes.forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.06);
+            gain.gain.setValueAtTime(0.16, now + idx * 0.06);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.06 + 0.25);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + idx * 0.06);
+            osc.stop(now + idx * 0.06 + 0.25);
+          });
+        } else if (type === 'jail') {
+          // 警報低音
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(220, now);
+          osc.frequency.linearRampToValueAtTime(130, now + 0.35);
+          gain.gain.setValueAtTime(0.22, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.4);
+        } else if (type === 'clap') {
+          // 節奏拍手聲 (1、2、3 拍)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(420, now);
+          osc.frequency.exponentialRampToValueAtTime(180, now + 0.08);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.09);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.09);
+        } else if (type === 'go') {
+          // 第 4 拍「講好話！」高音叮聲
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(880, now);
+          osc.frequency.exponentialRampToValueAtTime(1318.5, now + 0.18);
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.2);
+        }
+      } catch (e) {
+        // 忽略瀏覽器未互動前的音效限制
+      }
+    }
+
+    /**************************************************************
+     * 4. 渲染 6x4 外框棋盤與中央決戰舞台
+     **************************************************************/
+    function renderBoard() {
+      const gridEl = document.getElementById('boardGrid');
+      const activeTeam = teams[currentTeamIndex];
+      const currentTile = BOARD_TILES[currentViewTileIndex];
+      const rawPrompt = currentTile.prompts[currentPromptIndex % currentTile.prompts.length];
+      const isObjectPrompt = typeof rawPrompt === 'object' && rawPrompt !== null;
+      const promptText = isObjectPrompt ? rawPrompt.text : rawPrompt;
+      const promptImg = isObjectPrompt ? rawPrompt.img : null;
+      const promptAuthor = isObjectPrompt && rawPrompt.author ? rawPrompt.author : null;
+
+      let html = '';
+
+      // 渲染 16 個外圍格子
+      BOARD_TILES.forEach(tile => {
+        const isCurrentView = tile.index === currentViewTileIndex;
+        const teamsHere = teams.filter(t => t.pos === tile.index);
+
+        const tokensHtml = teamsHere.map(t => {
+          const isCurrentTurn = t.id === activeTeam.id;
+          return `
+            <div onclick="event.stopPropagation(); selectTeamById(${t.id})"
+                 title="${t.name}（第${t.id}組｜${t.score}分）"
+                 style="background:${t.color};"
+                 class="token-badge ${isCurrentTurn ? 'token-active-glow' : ''} cursor-pointer px-1.5 py-0.5 rounded-full text-white font-black text-xs flex items-center gap-0.5 shadow-md border border-white">
+              <span>${t.icon}</span>
+              <span class="text-[11px]">${t.id}</span>
+            </div>
+          `;
+        }).join('');
+
+        html += `
+          <div onclick="inspectTile(${tile.index})"
+               style="grid-row:${tile.row}; grid-column:${tile.col}; background:${tile.bg}; border-color:${tile.border};"
+               class="board-tile ${isCurrentView ? 'active-tile' : ''} border-[3px] rounded-xl p-2 flex flex-col justify-between cursor-pointer select-none">
+            
+            <!-- 格子頂部：順時針編號與小標 -->
+            <div class="flex items-center justify-between w-full">
+              <span class="text-[11px] font-black px-1.5 py-0.5 rounded bg-black/35 text-white">
+                #${String(tile.index).padStart(2, '0')}
+              </span>
+              <span style="color:${tile.subColor};" class="text-[11px] font-bold truncate max-w-[75%]">
+                ${tile.subtitle}
+              </span>
+            </div>
+
+            <!-- 格子中央：大標題 -->
+            <div class="my-auto text-center py-0.5">
+              <div style="color:${tile.textColor};" class="text-base md:text-lg font-black leading-tight tracking-tight drop-shadow-sm">
+                ${tile.title}
+              </div>
+            </div>
+
+            <!-- 格子底部：停在此格的各組代表棋子 -->
+            <div class="min-h-[26px] flex flex-wrap items-center justify-center gap-1 bg-black/25 rounded-lg p-1">
+              ${tokensHtml || '<span class="text-[10px] text-white/40 font-medium">尚無隊伍</span>'}
+            </div>
+          </div>
+        `;
+      });
+
+      // 渲染中央 4x2 決戰主舞台
+      const diceIcons = ['fa-dice-one', 'fa-dice-two', 'fa-dice-three', 'fa-dice-four', 'fa-dice-five', 'fa-dice-six'];
+      const diceIconClass = diceIcons[(lastDiceValue - 1) % 6];
+
+      html += `
+        <div class="center-stage bg-[#FAF8F5] text-[#162A22] border-4 border-white rounded-2xl p-3.5 flex flex-col justify-between shadow-inner overflow-hidden">
+          
+          <!-- 舞台頂部：輪到哪一組 & 擲骰子與點將控制列 -->
+          <div class="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b-2 border-[#E5E2DC]">
+            
+            <!-- 當前行動組別徽章 -->
+            <div class="flex items-center gap-2.5">
+              <div style="background:${activeTeam.color};" class="w-10 h-10 rounded-xl flex items-center justify-center text-2xl shadow-md border-2 border-white text-white">
+                ${activeTeam.icon}
+              </div>
+              <div>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[11px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-[#162A22] text-[#8CE0B8]">當前行動隊伍</span>
+                  ${activeTeam.inJail ? '<span class="text-[11px] font-black px-2 py-0.5 rounded bg-rose-600 text-white">🚫 監獄反省中</span>' : ''}
+                </div>
+                <h3 class="text-lg font-black text-[#162A22] leading-tight mt-0.5">${activeTeam.name}</h3>
+              </div>
+            </div>
+
+            <!-- 中央：3D 擲骰子按鈕 + 1~5號隨機點將器 -->
+            <div class="flex flex-wrap items-center gap-1.5">
+              <button id="rollDiceBtn" onclick="rollDiceAndMove()" ${isRolling ? 'disabled' : ''}
+                      class="bg-gradient-to-r from-[#E05A47] to-[#C05621] hover:from-[#d04a37] hover:to-[#a84616] text-white font-black px-3.5 py-2 rounded-xl shadow-lg active:scale-95 transition flex items-center gap-2 text-sm md:text-base cursor-pointer">
+                <i id="diceIcon" class="fa-solid ${diceIconClass} text-xl ${isRolling ? 'dice-rolling' : ''} text-[#F6E05E]"></i>
+                <span>${isRolling ? '擲骰移動中...' : `🎲 擲骰子出發 (${lastDiceValue}點)`}</span>
+              </button>
+
+              <button onclick="pickRandomMember()"
+                      class="bg-[#162A22] hover:bg-[#213B31] text-[#8CE0B8] font-black px-3 py-2 rounded-xl shadow active:scale-95 transition flex items-center gap-1.5 text-xs md:text-sm">
+                <i class="fa-solid fa-bolt text-[#F6E05E]"></i>
+                <span>${pickedMemberText}</span>
+              </button>
+
+              <button onclick="nextTeamTurn()"
+                      class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-black px-2.5 py-2 rounded-xl transition active:scale-95 text-xs md:text-sm" title="切換至下一組">
+                下一組 <i class="fa-solid fa-forward-step ml-0.5"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- 舞台中央：當前踩中格子的關卡題卡與互動工具 -->
+          <div class="my-auto py-2 flex flex-col justify-between gap-2">
+            <div class="flex flex-wrap items-center justify-between gap-1.5">
+              <div class="flex items-center gap-2">
+                <span style="background:${currentTile.bg}; color:${currentTile.textColor};" class="font-black px-2.5 py-0.5 rounded-lg text-xs md:text-sm shadow border border-black/10">
+                  #${String(currentTile.index).padStart(2, '0')} ${currentTile.title}
+                </span>
+                <span class="text-xs font-black text-[#9E2B1C] bg-rose-100 px-2 py-0.5 rounded-md">
+                  ${currentTile.mode}
+                </span>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-1.5">
+                ${currentTile.category === 'RPS_LOSE' ? `
+                  <button onclick="rollRpsDealer()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs font-black px-2.5 py-1 rounded-lg shadow transition">
+                    <i class="fa-solid fa-hand-fist mr-1"></i>${rpsDealerText}
+                  </button>
+                ` : ''}
+
+                ${currentTile.category === 'RHYTHM' ? `
+                  <button onclick="toggleRhythmBeat()" class="${rhythmInterval ? 'bg-rose-600 hover:bg-rose-500' : 'bg-amber-600 hover:bg-amber-500'} text-white text-xs font-black px-2.5 py-1 rounded-lg shadow transition">
+                    <i class="fa-solid ${rhythmInterval ? 'fa-stop' : 'fa-drum'} mr-1"></i>${rhythmInterval ? '停止三拍器' : '🎵 啟動三拍節拍器'}
+                  </button>
+                  <button onclick="toggleRhythmSpeed()" class="bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-black px-2 py-1 rounded-lg transition">
+                    ${rhythmFastMode ? '🔥 1.5倍速' : '一般速度'}
+                  </button>
+                ` : ''}
+
+                ${promptImg ? `
+                  <button onclick="openStudentQuestionModalForCurrentTile()" class="bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-black px-2.5 py-1 rounded-lg transition" title="上傳自己的搞笑照片或題目">
+                    <i class="fa-solid fa-camera mr-1"></i>傳圖/出題
+                  </button>
+                ` : `
+                  <button onclick="openStudentQuestionModalForCurrentTile()" class="bg-pink-100 hover:bg-pink-200 text-pink-900 text-xs font-black px-2.5 py-1 rounded-lg transition" title="讓學生幫這一格加新題目">
+                    <i class="fa-solid fa-plus mr-1"></i>學生出題
+                  </button>
+                `}
+
+                <button onclick="switchPrompt()" class="bg-emerald-100 hover:bg-emerald-200 text-[#1B4D3E] text-xs font-black px-2.5 py-1 rounded-lg transition">
+                  <i class="fa-solid fa-arrows-rotate mr-1"></i>下一題 (${(currentPromptIndex % currentTile.prompts.length) + 1}/${currentTile.prompts.length})
+                </button>
+              </div>
+            </div>
+
+            <!-- 若為「果園菜園海廢園」三拍節奏遊戲，顯示三拍視覺閃燈條 -->
+            ${currentTile.category === 'RHYTHM' ? `
+              <div class="bg-[#162A22] text-white px-3 py-1.5 rounded-xl flex items-center justify-between gap-2 shadow-inner">
+                <span class="text-xs font-bold text-[#8CE0B8]"><i class="fa-solid fa-Hands-clapping mr-1"></i>三拍輪替口訣：果園(1) ➔ 菜園(2) ➔ 特教園(3) ➔ 誇特教系好話！</span>
+                <div class="flex items-center gap-1.5">
+                  <span id="beatDot1" class="px-2 py-0.5 rounded text-xs font-black ${rhythmStep === 1 ? 'bg-[#F6E05E] text-slate-950 scale-110' : 'bg-slate-700 text-slate-400'} transition">啪 1</span>
+                  <span id="beatDot2" class="px-2 py-0.5 rounded text-xs font-black ${rhythmStep === 2 ? 'bg-[#F6E05E] text-slate-950 scale-110' : 'bg-slate-700 text-slate-400'} transition">啪 2</span>
+                  <span id="beatDot3" class="px-2 py-0.5 rounded text-xs font-black ${rhythmStep === 3 ? 'bg-[#F6E05E] text-slate-950 scale-110' : 'bg-slate-700 text-slate-400'} transition">啪 3</span>
+                  <span id="beatDot4" class="px-2.5 py-0.5 rounded text-xs font-black ${rhythmStep === 4 ? 'bg-[#E05A47] text-white scale-110 shadow-md' : 'bg-slate-700 text-slate-400'} transition">🗣️ 說好話！</span>
+                </div>
+              </div>
+            ` : ''}
+
+            <!-- 題卡主文字與圖片框 -->
+            <div class="bg-white border-2 border-[#E5E2DC] rounded-xl p-3 shadow-sm flex flex-col md:flex-row items-center gap-3">
+              ${promptImg ? `
+                <div onclick="openImageLightbox('${promptImg}', \`${promptText.replace(/`/g, '')}\`)"
+                     class="relative group cursor-zoom-in shrink-0 w-36 h-24 md:w-44 md:h-28 rounded-lg overflow-hidden border-2 border-amber-400 bg-slate-900 shadow">
+                  <img src="${promptImg}"
+                       onerror="this.src='https://placehold.co/600x400/162A22/F6E05E?text=Funny+Photo+Oogiri'"
+                       alt="大喜利圖片"
+                       class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                  <div class="absolute bottom-0 inset-x-0 bg-black/70 text-[#F6E05E] text-[10px] font-black text-center py-0.5">
+                    <i class="fa-solid fa-magnifying-glass-plus mr-0.5"></i>點擊全螢幕放大
+                  </div>
+                </div>
+              ` : ''}
+              <div class="flex-1 min-w-0">
+                <div class="flex flex-wrap items-center gap-1.5 mb-0.5">
+                  <p class="text-[11px] font-bold text-slate-500">${currentTile.desc}</p>
+                  ${promptAuthor ? `<span class="bg-gradient-to-r from-pink-500 to-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow">🎓 ${promptAuthor} 原創題</span>` : ''}
+                </div>
+                <p class="text-sm md:text-base font-black text-[#162A22] leading-snug">
+                  ${promptText}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 舞台底部：倒數計時器 & 一鍵頒獎判定列 -->
+          <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t-2 border-[#E5E2DC]">
+            <!-- 計時器 -->
+            <div class="flex items-center gap-1.5 bg-slate-200/80 px-2.5 py-1 rounded-xl">
+              <i class="fa-solid fa-stopwatch text-[#1B4D3E]"></i>
+              <span id="timerDisplay" class="font-mono font-black text-sm md:text-base text-[#162A22] w-10 text-center">${timerSeconds}s</span>
+              <button onclick="startTimer(45)" class="bg-[#162A22] text-white text-xs font-bold px-2 py-0.5 rounded hover:bg-slate-700">45秒</button>
+              <button onclick="startTimer(15)" class="bg-[#162A22] text-white text-xs font-bold px-2 py-0.5 rounded hover:bg-slate-700">15秒</button>
+              <button onclick="startTimer(5)" class="bg-[#E05A47] text-white text-xs font-bold px-2 py-0.5 rounded hover:bg-rose-700">3拍(5s)</button>
+              <button onclick="stopTimer()" class="bg-slate-400 text-white text-xs font-bold px-2 py-0.5 rounded hover:bg-slate-500">暫停</button>
+            </div>
+
+            <!-- 過關獎勵按鈕 -->
+            <div class="flex flex-wrap items-center gap-1.5">
+              <button onclick="rewardCurrentTeam(1, 0, false)" class="bg-emerald-700 hover:bg-emerald-600 text-white font-black px-3 py-1.5 rounded-xl text-xs md:text-sm shadow transition active:scale-95">
+                ⭕ 過關 (+1分)
+              </button>
+              <button onclick="rewardCurrentTeam(3, 1, true)" class="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-black px-3 py-1.5 rounded-xl text-xs md:text-sm shadow-md transition active:scale-95">
+                🏆 IPPON 滿分 (+3分＆進1步)
+              </button>
+              <button onclick="openCoopModal()" class="bg-[#1A365D] hover:bg-blue-900 text-[#F6E05E] font-black px-3 py-1.5 rounded-xl text-xs md:text-sm shadow transition active:scale-95">
+                ⚡ 多組共鬥給分
+              </button>
+            </div>
+          </div>
+
+        </div>
+      `;
+
+      gridEl.innerHTML = html;
+      updateSidePanelInfo();
+    }
+
+    /**************************************************************
+     * 5. 渲染右側 8 組排行榜與快速加分卡
+     **************************************************************/
+    function renderTeamList() {
+      const container = document.getElementById('teamListContainer');
+      const activeTeam = teams[currentTeamIndex];
+
+      container.innerHTML = teams.map((team, idx) => {
+        const isSelected = idx === currentTeamIndex;
+        const tile = BOARD_TILES[team.pos];
+        return `
+          <div onclick="selectTeam(${idx})"
+               class="p-2.5 rounded-xl border-2 transition cursor-pointer flex items-center justify-between gap-2 ${
+                 isSelected
+                   ? 'bg-[#213B31] border-[#F6E05E] shadow-md'
+                   : 'bg-[#12221B]/80 border-transparent hover:border-[#2D4A3E]'
+               }">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div style="background:${team.color};" class="w-9 h-9 rounded-lg flex items-center justify-center text-lg shrink-0 shadow border border-white/80 text-white font-bold">
+                ${team.icon}
+              </div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-1.5">
+                  <span class="font-black text-sm text-white truncate">${team.name}</span>
+                  ${team.laps > 0 ? `<span class="text-[10px] font-black bg-amber-400 text-slate-950 px-1.5 py-0.2 rounded">第${team.laps + 1}圈</span>` : ''}
+                  ${team.inJail ? `<span class="text-[10px] font-black bg-rose-600 text-white px-1.5 py-0.2 rounded">監獄</span>` : ''}
+                </div>
+                <div class="text-xs text-[#8CE0B8] font-medium truncate">
+                  📍 #${String(team.pos).padStart(2, '0')} ${tile.title}
+                </div>
+              </div>
+            </div>
+
+            <!-- 分數加減控制 -->
+            <div class="flex items-center gap-1 shrink-0" onclick="event.stopPropagation()">
+              <button onclick="adjustScore(${idx}, -1)" class="w-6 h-6 rounded bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-black">-</button>
+              <div class="bg-[#162A22] border border-[#8CE0B8]/40 px-2 py-0.5 rounded text-center min-w-[44px]">
+                <div class="text-xs font-black text-[#F6E05E]">${team.score}</div>
+                <div class="text-[9px] text-slate-400 leading-none">ㄅ級分</div>
+              </div>
+              <button onclick="adjustScore(${idx}, 1)" class="w-6 h-6 rounded bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-black">+</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function updateSidePanelInfo() {
+      const activeTeam = teams[currentTeamIndex];
+      const tile = BOARD_TILES[activeTeam.pos];
+      document.getElementById('selectedTeamLabel').textContent = `${activeTeam.icon} ${activeTeam.name}`;
+      document.getElementById('selectedTeamTileLabel').textContent = `位於：#${String(tile.index).padStart(2, '0')} ${tile.title}`;
+    }
+
+    /**************************************************************
+     * 6. 核心遊戲互動邏輯：擲骰子、逐格跳動動畫、點將器、猜拳器
+     **************************************************************/
+    function selectTeam(idx) {
+      if (isRolling) return;
+      currentTeamIndex = idx;
+      currentViewTileIndex = teams[idx].pos;
+      currentPromptIndex = 0;
+      renderBoard();
+      renderTeamList();
+    }
+
+    function selectTeamById(id) {
+      const idx = teams.findIndex(t => t.id === id);
+      if (idx !== -1) selectTeam(idx);
+    }
+
+    function inspectTile(tileIndex) {
+      if (isRolling) return;
+      stopRhythmBeat();
+      currentViewTileIndex = tileIndex;
+      currentPromptIndex = 0;
+      playSound('tick');
+      renderBoard();
+    }
+
+    function switchPrompt() {
+      currentPromptIndex++;
+      playSound('tick');
+      renderBoard();
+    }
+
+    // 圖片大喜利：全螢幕放大檢視與自訂圖片網址
+    function openImageLightbox(imgUrl, promptStr) {
+      document.getElementById('lightboxImg').src = imgUrl;
+      document.getElementById('lightboxPrompt').textContent = promptStr;
+      const lb = document.getElementById('imageLightbox');
+      lb.classList.remove('hidden');
+      lb.classList.add('flex');
+    }
+
+    function closeImageLightbox() {
+      const lb = document.getElementById('imageLightbox');
+      lb.classList.add('hidden');
+      lb.classList.remove('flex');
+    }
+
+    /**************************************************************
+     * 6-B. 🎓 學生出題與上傳梗圖工坊邏輯 (單題傳圖 + 40人批次匯入)
+     **************************************************************/
+    function populateStudentQuestionTileSelects() {
+      const singleSelect = document.getElementById('sqTileIndex');
+      const batchSelect = document.getElementById('batchTargetTile');
+      if (!singleSelect || !batchSelect) return;
+
+      singleSelect.innerHTML = BOARD_TILES.map(t =>
+        `<option value="${t.index}" ${t.index === currentViewTileIndex ? 'selected' : ''}>#${String(t.index).padStart(2, '0')} ${t.title}（現有 ${t.prompts.length} 題）</option>`
+      ).join('');
+
+      batchSelect.innerHTML = `<option value="auto">🔄 自動依內容或平均分配到大喜利／機會／命運格</option>` +
+        BOARD_TILES.map(t =>
+          `<option value="${t.index}">全部匯入至 ➔ #${String(t.index).padStart(2, '0')} ${t.title}</option>`
+        ).join('');
+    }
+
+    function openStudentQuestionModal() {
+      populateStudentQuestionTileSelects();
+      const modal = document.getElementById('studentQuestionModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function openStudentQuestionModalForCurrentTile() {
+      populateStudentQuestionTileSelects();
+      document.getElementById('sqTileIndex').value = String(currentViewTileIndex);
+      const modal = document.getElementById('studentQuestionModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeStudentQuestionModal() {
+      const modal = document.getElementById('studentQuestionModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function switchCreatorTab(tab) {
+      const singleDiv = document.getElementById('creatorTabSingle');
+      const batchDiv = document.getElementById('creatorTabBatch');
+      const btnSingle = document.getElementById('tabBtnSingle');
+      const btnBatch = document.getElementById('tabBtnBatch');
+
+      if (tab === 'single') {
+        singleDiv.classList.remove('hidden');
+        batchDiv.classList.add('hidden');
+        btnSingle.className = "bg-[#E05A47] text-white font-black px-4 py-1.5 rounded-xl text-sm shadow transition";
+        btnBatch.className = "bg-slate-800 text-slate-300 hover:bg-slate-700 font-bold px-4 py-1.5 rounded-xl text-sm transition";
+      } else {
+        singleDiv.classList.add('hidden');
+        batchDiv.classList.remove('hidden');
+        btnBatch.className = "bg-[#E05A47] text-white font-black px-4 py-1.5 rounded-xl text-sm shadow transition";
+        btnSingle.className = "bg-slate-800 text-slate-300 hover:bg-slate-700 font-bold px-4 py-1.5 rounded-xl text-sm transition";
+      }
+    }
+
+    function handleLocalImageUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        // 自動將上傳照片壓縮至寬度 480px 內，確保雲端同步快速且不超過容量上限
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          const maxW = 480;
+          const scale = img.width > maxW ? maxW / img.width : 1;
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          uploadedLocalImageDataUrl = canvas.toDataURL('image/jpeg', 0.65);
+          document.getElementById('sqImagePreview').src = uploadedLocalImageDataUrl;
+          const box = document.getElementById('sqImagePreviewBox');
+          box.classList.remove('hidden');
+          box.classList.add('flex');
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function previewUrlImage(url) {
+      const trimmed = url.trim();
+      if (!trimmed) {
+        if (!uploadedLocalImageDataUrl) clearUploadedImage();
+        return;
+      }
+      document.getElementById('sqImagePreview').src = trimmed;
+      const box = document.getElementById('sqImagePreviewBox');
+      box.classList.remove('hidden');
+      box.classList.add('flex');
+    }
+
+    function clearUploadedImage() {
+      uploadedLocalImageDataUrl = "";
+      document.getElementById('sqImageFile').value = "";
+      document.getElementById('sqImageUrl').value = "";
+      const box = document.getElementById('sqImagePreviewBox');
+      box.classList.add('hidden');
+      box.classList.remove('flex');
+    }
+
+    function updateStudentQuestionBadge() {
+      const badge = document.getElementById('studentQuestionCountBadge');
+      if (badge) badge.textContent = String(totalStudentQuestionsAdded);
+    }
+
+    function submitStudentQuestion(playImmediately) {
+      const author = document.getElementById('sqAuthor').value;
+      const tileIdx = parseInt(document.getElementById('sqTileIndex').value, 10);
+      const rawText = document.getElementById('sqPromptText').value.trim();
+      const urlImg = document.getElementById('sqImageUrl').value.trim();
+      const finalImg = uploadedLocalImageDataUrl || urlImg || null;
+
+      if (!rawText && !finalImg) {
+        playSound('jail');
+        return;
+      }
+
+      const targetTile = BOARD_TILES[tileIdx];
+      const formattedText = rawText || "📸 【學生上傳梗圖大喜利】請看左方同學上傳的圖片，在 45 秒內配出一句全場笑翻的神級台詞！";
+
+      const newPromptObj = {
+        text: `🔥 【${author} 出題】${formattedText}`,
+        img: finalImg,
+        author: author
+      };
+
+      // 將學生新出的題目放到陣列最前面或最後面並記錄索引
+      targetTile.prompts.push(newPromptObj);
+      const newPromptIdx = targetTile.prompts.length - 1;
+
+      customStudentPromptsRecord.push({
+        tileIdx: tileIdx,
+        promptObj: newPromptObj
+      });
+
+      totalStudentQuestionsAdded++;
+      updateStudentQuestionBadge();
+      triggerAutoCloudSave();
+
+      // 清空輸入欄
+      document.getElementById('sqPromptText').value = "";
+      clearUploadedImage();
+
+      if (playImmediately) {
+        currentViewTileIndex = tileIdx;
+        currentPromptIndex = newPromptIdx;
+        closeStudentQuestionModal();
+        playSound('ippon');
+        triggerIpponBanner(`🎓 ${author} 新題目登場！`, `已投放至 #${String(tileIdx).padStart(2, '0')} ${targetTile.title}！全班準備接招！`);
+      } else {
+        populateStudentQuestionTileSelects();
+        playSound('laugh');
+      }
+      renderBoard();
+    }
+
+    function importBatchStudentQuestions() {
+      const rawLines = document.getElementById('batchQuestionsInput').value.split('\n');
+      const targetMode = document.getElementById('batchTargetTile').value;
+      const defaultTargets = [4, 6, 9, 12, 14, 3, 11, 1, 7]; // 熱門互動格
+      let addedCount = 0;
+
+      rawLines.forEach((line, idx) => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+
+        let tileIdx = targetMode === 'auto' ? defaultTargets[idx % defaultTargets.length] : parseInt(targetMode, 10);
+        let author = "全班共創";
+        let qText = trimmed;
+        let qImg = null;
+
+        // 支援 "格號 | 組別 | 題目 | 圖片網址" 或 "組別 | 題目" 格式
+        if (trimmed.includes('|')) {
+          const parts = trimmed.split('|').map(s => s.trim());
+          if (!isNaN(parseInt(parts[0], 10)) && parts.length >= 3) {
+            tileIdx = Math.min(15, Math.max(0, parseInt(parts[0], 10)));
+            author = parts[1] || "同學出題";
+            qText = parts[2];
+            if (parts[3] && parts[3].startsWith('http')) qImg = parts[3];
+          } else if (parts.length >= 2) {
+            author = parts[0];
+            qText = parts[1];
+            if (parts[2] && parts[2].startsWith('http')) qImg = parts[2];
+          }
+        }
+
+        BOARD_TILES[tileIdx].prompts.push({
+          text: `🔥 【${author}】${qText}`,
+          img: qImg,
+          author: author
+        });
+        customStudentPromptsRecord.push({
+          tileIdx: tileIdx,
+          promptObj: {
+            text: `🔥 【${author}】${qText}`,
+            img: qImg,
+            author: author
+          }
+        });
+        addedCount++;
+        totalStudentQuestionsAdded++;
+      });
+
+      if (addedCount > 0) {
+        document.getElementById('batchQuestionsInput').value = "";
+        updateStudentQuestionBadge();
+        triggerAutoCloudSave();
+        closeStudentQuestionModal();
+        playSound('ippon');
+        triggerIpponBanner(`📥 成功匯入 ${addedCount} 道學生自創題！`, '各組踩中格子按「下一題」即可抽到同學出的題目！');
+        renderBoard();
+      }
+    }
+
+    // 「果園菜園海廢園」三拍節奏器控制
+    function toggleRhythmBeat() {
+      if (rhythmInterval) {
+        stopRhythmBeat();
+        renderBoard();
+        return;
+      }
+      rhythmStep = 0;
+      const intervalMs = rhythmFastMode ? 480 : 700;
+      rhythmTick();
+      rhythmInterval = setInterval(rhythmTick, intervalMs);
+    }
+
+    function rhythmTick() {
+      rhythmStep = (rhythmStep % 4) + 1;
+      if (rhythmStep <= 3) {
+        playSound('clap');
+      } else {
+        playSound('go');
+      }
+      renderBoard();
+    }
+
+    function stopRhythmBeat() {
+      if (rhythmInterval) {
+        clearInterval(rhythmInterval);
+        rhythmInterval = null;
+      }
+      rhythmStep = 0;
+    }
+
+    function toggleRhythmSpeed() {
+      rhythmFastMode = !rhythmFastMode;
+      if (rhythmInterval) {
+        stopRhythmBeat();
+        toggleRhythmBeat();
+      } else {
+        renderBoard();
+      }
+    }
+
+    function rollDiceAndMove() {
+      if (isRolling) return;
+      stopRhythmBeat();
+      isRolling = true;
+      const activeTeam = teams[currentTeamIndex];
+      activeTeam.inJail = false;
+
+      let rollCount = 0;
+      const maxRolls = 10;
+      const rollTimer = setInterval(() => {
+        lastDiceValue = Math.floor(Math.random() * 6) + 1;
+        playSound('tick');
+        renderBoard();
+        rollCount++;
+
+        if (rollCount >= maxRolls) {
+          clearInterval(rollTimer);
+          const steps = lastDiceValue;
+          animateStepByStep(steps);
+        }
+      }, 65);
+    }
+
+    function animateStepByStep(stepsRemaining) {
+      if (stepsRemaining <= 0) {
+        isRolling = false;
+        const activeTeam = teams[currentTeamIndex];
+        currentViewTileIndex = activeTeam.pos;
+        currentPromptIndex = 0;
+        if (activeTeam.pos === 8) {
+          activeTeam.inJail = true;
+          playSound('jail');
+        } else {
+          playSound('laugh');
+        }
+        renderBoard();
+        renderTeamList();
+        triggerAutoCloudSave();
+        return;
+      }
+
+      const activeTeam = teams[currentTeamIndex];
+      const nextPos = (activeTeam.pos + 1) % BOARD_TILES.length;
+      // 經過起點獲得 +1 圈與 +1 ㄅ級分
+      if (nextPos === 0) {
+        activeTeam.laps += 1;
+        activeTeam.score += 1;
+      }
+      activeTeam.pos = nextPos;
+      currentViewTileIndex = nextPos;
+      playSound('step');
+      renderBoard();
+      renderTeamList();
+
+      setTimeout(() => {
+        animateStepByStep(stepsRemaining - 1);
+      }, 240);
+    }
+
+    function manualMove(delta) {
+      if (isRolling) return;
+      const activeTeam = teams[currentTeamIndex];
+      const total = BOARD_TILES.length;
+      activeTeam.pos = (activeTeam.pos + delta + total) % total;
+      activeTeam.inJail = (activeTeam.pos === 8);
+      currentViewTileIndex = activeTeam.pos;
+      currentPromptIndex = 0;
+      playSound('step');
+      renderBoard();
+      renderTeamList();
+      triggerAutoCloudSave();
+    }
+
+    function sendToJail() {
+      if (isRolling) return;
+      const activeTeam = teams[currentTeamIndex];
+      activeTeam.pos = 8; // #08 監獄
+      activeTeam.inJail = true;
+      currentViewTileIndex = 8;
+      currentPromptIndex = 0;
+      playSound('jail');
+      renderBoard();
+      renderTeamList();
+      triggerAutoCloudSave();
+    }
+
+    function nextTeamTurn() {
+      if (isRolling) return;
+      currentTeamIndex = (currentTeamIndex + 1) % teams.length;
+      currentViewTileIndex = teams[currentTeamIndex].pos;
+      currentPromptIndex = 0;
+      playSound('tick');
+      renderBoard();
+      renderTeamList();
+      triggerAutoCloudSave();
+    }
+
+    function adjustScore(teamIdx, delta) {
+      teams[teamIdx].score = Math.max(0, teams[teamIdx].score + delta);
+      if (delta > 0) playSound('step');
+      renderBoard();
+      renderTeamList();
+      triggerAutoCloudSave();
+    }
+
+    function rewardCurrentTeam(scoreDelta, stepDelta, showIppon) {
+      const activeTeam = teams[currentTeamIndex];
+      activeTeam.score += scoreDelta;
+      if (stepDelta > 0) {
+        activeTeam.pos = (activeTeam.pos + stepDelta) % BOARD_TILES.length;
+        currentViewTileIndex = activeTeam.pos;
+      }
+      if (showIppon) {
+        playSound('ippon');
+        triggerIpponBanner(`${activeTeam.icon} ${activeTeam.name} 獲得 IPPON！`, '神級幽默轉念！+3 ㄅ級分 ＆ 前進 1 步！');
+      } else {
+        playSound('laugh');
+      }
+      renderBoard();
+      renderTeamList();
+      triggerAutoCloudSave();
+    }
+
+    function sendToJail() {
+      if (isRolling) return;
+      const activeTeam = teams[currentTeamIndex];
+      activeTeam.pos = 8; // #08 監獄
+      activeTeam.inJail = true;
+      currentViewTileIndex = 8;
+      currentPromptIndex = 0;
+      playSound('jail');
+      renderBoard();
+      renderTeamList();
+    }
+
+    function nextTeamTurn() {
+      if (isRolling) return;
+      currentTeamIndex = (currentTeamIndex + 1) % teams.length;
+      currentViewTileIndex = teams[currentTeamIndex].pos;
+      currentPromptIndex = 0;
+      playSound('tick');
+      renderBoard();
+      renderTeamList();
+    }
+
+    function adjustScore(teamIdx, delta) {
+      teams[teamIdx].score = Math.max(0, teams[teamIdx].score + delta);
+      if (delta > 0) playSound('step');
+      renderBoard();
+      renderTeamList();
+    }
+
+    function rewardCurrentTeam(scoreDelta, stepDelta, showIppon) {
+      const activeTeam = teams[currentTeamIndex];
+      activeTeam.score += scoreDelta;
+      if (stepDelta > 0) {
+        activeTeam.pos = (activeTeam.pos + stepDelta) % BOARD_TILES.length;
+        currentViewTileIndex = activeTeam.pos;
+      }
+      if (showIppon) {
+        playSound('ippon');
+        triggerIpponBanner(`${activeTeam.icon} ${activeTeam.name} 獲得 IPPON！`, '神級幽默轉念！+3 ㄅ級分 ＆ 前進 1 步！');
+      } else {
+        playSound('laugh');
+      }
+      renderBoard();
+      renderTeamList();
+    }
+
+    // 隨機抽取 1~5 號組員或是全班共鬥模式
+    function pickRandomMember() {
+      const options = [
+        "⚡ 請各組【1號隊員】起立PK！",
+        "⚡ 請各組【2號隊員】起立PK！",
+        "⚡ 請各組【3號隊員】起立PK！",
+        "⚡ 請各組【4號隊員】起立PK！",
+        "⚡ 請各組【5號隊員】起立PK！",
+        "🔥 全班 8 組同步 45 秒搶答！"
+      ];
+      pickedMemberText = options[Math.floor(Math.random() * options.length)];
+      playSound('laugh');
+      renderBoard();
+    }
+
+    // 「一定要輸猜拳」莊家隨機出拳器
+    function rollRpsDealer() {
+      const hands = [
+        "莊家喊：我要出【✊ 石頭】（請秒出✌️剪刀）",
+        "莊家喊：我要出【✌️ 剪刀】（請秒出🖐️布）",
+        "莊家喊：我要出【🖐️ 布】（請秒出✊石頭）"
+      ];
+      rpsDealerText = hands[Math.floor(Math.random() * hands.length)];
+      playSound('ippon');
+      renderBoard();
+    }
+
+    /**************************************************************
+     * 7. 倒數計時器與彈出視窗控制
+     **************************************************************/
+    function startTimer(sec) {
+      stopTimer();
+      timerSeconds = sec;
+      const el = document.getElementById('timerDisplay');
+      if (el) el.textContent = `${timerSeconds}s`;
+      playSound('tick');
+
+      timerInterval = setInterval(() => {
+        timerSeconds--;
+        const displayEl = document.getElementById('timerDisplay');
+        if (displayEl) {
+          displayEl.textContent = `${timerSeconds}s`;
+          if (timerSeconds <= 5) {
+            displayEl.classList.add('text-rose-600');
+          } else {
+            displayEl.classList.remove('text-rose-600');
+          }
+        }
+        if (timerSeconds <= 5 && timerSeconds > 0) {
+          playSound('tick');
+        }
+        if (timerSeconds <= 0) {
+          stopTimer();
+          playSound('jail');
+        }
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+    }
+
+    function triggerIpponBanner(title, subtitle) {
+      document.getElementById('ipponTitle').textContent = title;
+      document.getElementById('ipponSubtitle').textContent = subtitle;
+      const overlay = document.getElementById('ipponOverlay');
+      overlay.classList.remove('hidden');
+      overlay.classList.add('flex');
+    }
+
+    function closeIpponBanner() {
+      const overlay = document.getElementById('ipponOverlay');
+      overlay.classList.add('hidden');
+      overlay.classList.remove('flex');
+    }
+
+    // 全班共鬥批次給分 Modal
+    function openCoopModal() {
+      const container = document.getElementById('coopTeamCheckboxes');
+      container.innerHTML = teams.map((t, idx) => `
+        <label class="flex items-center gap-2.5 bg-[#213B31] hover:bg-[#2D4A3E] p-2.5 rounded-xl cursor-pointer border border-[#8CE0B8]/20">
+          <input type="checkbox" value="${idx}" class="coop-check w-4 h-4 accent-[#E05A47] rounded">
+          <span class="text-lg">${t.icon}</span>
+          <span class="text-sm font-bold text-white truncate">${t.name}</span>
+        </label>
+      `).join('');
+      const modal = document.getElementById('coopModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeCoopModal() {
+      const modal = document.getElementById('coopModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function applyCoopReward(scoreAdd, stepAdd) {
+      const checks = document.querySelectorAll('.coop-check:checked');
+      let rewardedNames = [];
+      checks.forEach(ch => {
+        const idx = parseInt(ch.value, 10);
+        teams[idx].score += scoreAdd;
+        if (stepAdd > 0) {
+          teams[idx].pos = (teams[idx].pos + stepAdd) % BOARD_TILES.length;
+        }
+        rewardedNames.push(teams[idx].name);
+      });
+      closeCoopModal();
+      if (rewardedNames.length > 0) {
+        playSound('ippon');
+        triggerIpponBanner('IPPON 共鬥大豐收！', `${rewardedNames.join('、')} 同步晉級加分！`);
+      }
+      renderBoard();
+      renderTeamList();
+      triggerAutoCloudSave();
+    }
+
+    // 組別名稱編輯 Modal
+    function openTeamModal() {
+      const list = document.getElementById('teamEditList');
+      list.innerHTML = teams.map((t, idx) => `
+        <div class="bg-[#213B31] p-2.5 rounded-xl border border-[#2D4A3E] flex items-center gap-2">
+          <input type="text" id="editIcon_${idx}" value="${t.icon}" class="w-10 text-center bg-[#162A22] text-white rounded p-1.5 text-base border border-slate-600">
+          <input type="text" id="editName_${idx}" value="${t.name}" class="flex-1 bg-[#162A22] text-white rounded p-1.5 text-sm font-bold border border-slate-600">
+        </div>
+      `).join('');
+      const modal = document.getElementById('teamModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeTeamModal() {
+      const modal = document.getElementById('teamModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function saveTeamSettings() {
+      teams.forEach((t, idx) => {
+        const iconVal = document.getElementById(`editIcon_${idx}`).value.trim();
+        const nameVal = document.getElementById(`editName_${idx}`).value.trim();
+        if (iconVal) t.icon = iconVal;
+        if (nameVal) t.name = nameVal;
+      });
+      closeTeamModal();
+      renderBoard();
+      renderTeamList();
+      triggerAutoCloudSave();
+    }
+
+    // 重置 Modal
+    function openResetModal() {
+      const modal = document.getElementById('resetModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeResetModal() {
+      const modal = document.getElementById('resetModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function confirmResetGame() {
+      teams.forEach(t => {
+        t.pos = 0;
+        t.score = 0;
+        t.laps = 0;
+        t.inJail = false;
+      });
+      currentTeamIndex = 0;
+      currentViewTileIndex = 0;
+      currentPromptIndex = 0;
+      closeResetModal();
+      playSound('laugh');
+      renderBoard();
+      renderTeamList();
+      triggerAutoCloudSave();
+    }
+
+    /**************************************************************
+     * 8. ☁️ 雲端同步中心：JSON 備份、Google Sheet CSV 與 GAS 串接
+     **************************************************************/
+    // 紀錄每格初始內建題目數量（8題），以便還原雲端題目時不重複疊加
+    const INITIAL_PROMPT_COUNTS = BOARD_TILES.map(t => t.prompts.length);
+
+    function openCloudSyncModal() {
+      const modal = document.getElementById('cloudSyncModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeCloudSyncModal() {
+      const modal = document.getElementById('cloudSyncModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function switchCloudTab(tab) {
+      const tabs = ['backup', 'sheet', 'deploy'];
+      const btns = {
+        backup: document.getElementById('cloudTabBtnBackup'),
+        sheet: document.getElementById('cloudTabBtnSheet'),
+        deploy: document.getElementById('cloudTabBtnDeploy')
+      };
+      const divs = {
+        backup: document.getElementById('cloudTabBackup'),
+        sheet: document.getElementById('cloudTabSheet'),
+        deploy: document.getElementById('cloudTabDeploy')
+      };
+      tabs.forEach(k => {
+        if (k === tab) {
+          divs[k].classList.remove('hidden');
+          btns[k].className = "bg-sky-600 text-white font-black px-3.5 py-1.5 rounded-xl text-xs md:text-sm shadow transition";
+        } else {
+          divs[k].classList.add('hidden');
+          btns[k].className = "bg-slate-800 text-slate-300 hover:bg-slate-700 font-bold px-3.5 py-1.5 rounded-xl text-xs md:text-sm transition";
+        }
+      });
+    }
+
+    function getSerializableGameState() {
+      return {
+        version: "2026.11.05",
+        updatedAt: Date.now(),
+        teams: teams,
+        currentTeamIndex: currentTeamIndex,
+        currentViewTileIndex: currentViewTileIndex,
+        lastDiceValue: lastDiceValue,
+        customStudentPromptsRecord: customStudentPromptsRecord
+      };
+    }
+
+    function applyRestoredGameState(data) {
+      if (!data || ! Array.isArray(data.teams)) return;
+      teams = data.teams;
+      currentTeamIndex = typeof data.currentTeamIndex === 'number' ? data.currentTeamIndex : 0;
+      currentViewTileIndex = typeof data.currentViewTileIndex === 'number' ? data.currentViewTileIndex : 0;
+      lastDiceValue = typeof data.lastDiceValue === 'number' ? data.lastDiceValue : 6;
+
+      if (Array.isArray(data.customStudentPromptsRecord)) {
+        customStudentPromptsRecord = data.customStudentPromptsRecord;
+        // 先將各格題目還原為初始 8 題，再掛載雲端儲存的學生自創題
+        BOARD_TILES.forEach((tile, idx) => {
+          tile.prompts = tile.prompts.slice(0, INITIAL_PROMPT_COUNTS[idx]);
+        });
+        customStudentPromptsRecord.forEach(item => {
+          if (BOARD_TILES[item.tileIdx] && item.promptObj) {
+            BOARD_TILES[item.tileIdx].prompts.push(item.promptObj);
+          }
+        });
+        totalStudentQuestionsAdded = customStudentPromptsRecord.length;
+        updateStudentQuestionBadge();
+      }
+      renderBoard();
+      renderTeamList();
+    }
+
+    function triggerAutoCloudSave() {
+      if (typeof window.saveStateToFirestoreCloud === 'function') {
+        window.saveStateToFirestoreCloud(getSerializableGameState());
+      }
+      const gasUrl = document.getElementById('gasWebAppUrl')?.value?.trim();
+      if (gasUrl) {
+        saveStateToGasWebhook(true);
+      }
+    }
+
+    function forceSaveToCloudNow() {
+      triggerAutoCloudSave();
+      playSound('ippon');
+      triggerIpponBanner('☁️ 雲端同步完成！', '目前 8 組位置、分數與學生題目已安全寫入雲端！');
+    }
+
+    // 匯出完整 JSON 備份檔至電腦 / Google Drive
+    function exportGameBackupJson() {
+      const dataStr = JSON.stringify(getSerializableGameState(), null, 2);
+      const blob = new Blob([dataStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const dateTag = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = `悅思人搞笑大富翁_進度備份_${dateTag}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      playSound('laugh');
+    }
+
+    // 從電腦 / Google Drive 匯入 JSON 備份檔
+    function importGameBackupJson(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          applyRestoredGameState(parsed);
+          triggerAutoCloudSave();
+          closeCloudSyncModal();
+          playSound('ippon');
+          triggerIpponBanner('📂 備份檔還原成功！', `已還原 8 組戰況與 ${totalStudentQuestionsAdded} 道學生自創題！`);
+        } catch (err) {
+          playSound('jail');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // 從 Google 試算表「發佈到網路」的 CSV 連結自動抓取全班題目
+    async function syncFromGoogleSheetCsv() {
+      const csvUrl = document.getElementById('googleSheetCsvUrl').value.trim();
+      const msgEl = document.getElementById('csvSyncResultMsg');
+      if (!csvUrl) {
+        msgEl.textContent = "⚠️ 請先貼上 Google 試算表發佈的 CSV 連結！";
+        return;
+      }
+      msgEl.textContent = "⏳ 正在從 Google 雲端試算表讀取題目...";
+      try {
+        const res = await fetch(csvUrl);
+        const csvText = await res.text();
+        const rows = csvText.split(/\r?\n/).slice(1); // 略過第一列標題列
+        let added = 0;
+        const defaultTargets = [4, 6, 9, 12, 14, 3, 11, 1, 7];
+
+        rows.forEach((row, idx) => {
+          if (!row.trim()) return;
+          const cols = row.split(',').map(c => c.replace(/^"|"$/g, '').trim());
+          // 支援 Google 表單欄位：[時間戳記, 組別, 格號, 題目文字, 圖片網址] 或 [組別, 格號, 題目文字]
+          let author = cols[1] || cols[0] || "雲端表單同學";
+          let tileIdx = parseInt(cols[2], 10);
+          let qText = cols[3] || cols[2] || cols[1];
+          let qImg = (cols[4] && cols[4].startsWith('http')) ? cols[4] : null;
+
+          if (isNaN(tileIdx) || tileIdx < 0 || tileIdx > 15) {
+            tileIdx = defaultTargets[idx % defaultTargets.length];
+          }
+          if (qText) {
+            const promptObj = {
+              text: `🔥 【${author} 雲端出題】${qText}`,
+              img: qImg,
+              author: author
+            };
+            BOARD_TILES[tileIdx].prompts.push(promptObj);
+            customStudentPromptsRecord.push({ tileIdx, promptObj });
+            added++;
+            totalStudentQuestionsAdded++;
+          }
+        });
+
+        updateStudentQuestionBadge();
+        renderBoard();
+        triggerAutoCloudSave();
+        msgEl.textContent = `✅ 成功從 Google 試算表匯入 ${added} 道最新題目！`;
+        playSound('ippon');
+      } catch (e) {
+        msgEl.textContent = "❌ 讀取失敗，請確認試算表已設為「檔案 ➔ 共用 ➔ 發佈到網路 (.csv)」！";
+      }
+    }
+
+    // 串接自架 Google Apps Script (GAS) 雲端存取（供 GitHub / Vercel 外部部署使用）
+    async function saveStateToGasWebhook(silent = false) {
+      const gasUrl = document.getElementById('gasWebAppUrl')?.value?.trim();
+      if (!gasUrl) return;
+      try {
+        await fetch(gasUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(getSerializableGameState())
+        });
+        if (!silent) {
+          playSound('ippon');
+          triggerIpponBanner('☁️ 已存入 Google 試算表！', '透過 Google Apps Script 完成外部雲端備份！');
+        }
+      } catch (e) {}
+    }
+
+    async function loadStateFromGasWebhook() {
+      const gasUrl = document.getElementById('gasWebAppUrl')?.value?.trim();
+      if (!gasUrl) return;
+      try {
+        const res = await fetch(gasUrl);
+        const data = await res.json();
+        applyRestoredGameState(data);
+        closeCloudSyncModal();
+        playSound('ippon');
+        triggerIpponBanner('☁️ 已從 Google 試算表還原！', '所有組別位置與題目皆已同步更新！');
+      } catch (e) {
+        playSound('jail');
+      }
+    }
+
+    function copyGasCode() {
+      const code = document.getElementById('gasCodeBlock').innerText;
+      const textarea = document.createElement('textarea');
+      textarea.value = code;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      playSound('laugh');
+      triggerIpponBanner('📋 程式碼已複製！', '請貼入 Google 試算表的「擴充功能 ➔ Apps Script」中！');
+    }
+
+    // 初始化渲染
+    window.onload = function () {
+      renderBoard();
+      renderTeamList();
+    };
+  </script>
+
+  <!-- 9. 內建 Firebase Firestore 雲端即時自動存檔模組（重新整理自動還原，絕不遺失進度） -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    const statusIcon = document.getElementById('cloudStatusIcon');
+    const statusText = document.getElementById('cloudStatusText');
+    const modalBadge = document.getElementById('modalCloudBadge');
+
+    async function initCloudPersistence() {
+      if (typeof __firebase_config === 'undefined' || !__firebase_config) {
+        if (statusText) statusText.textContent = "☁️ 備份 / GitHub部署";
+        if (modalBadge) {
+          modalBadge.textContent = "📂 外部環境模式（可使用 JSON 或 GAS 雲端存檔）";
+          modalBadge.className = "bg-amber-400 text-slate-950 text-xs font-black px-2.5 py-0.5 rounded-full";
+        }
+        return;
+      }
+
+      try {
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-monopoly-app';
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // RULE 3: Auth Before Queries
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+
+        let currentUser = auth.currentUser;
+        onAuthStateChanged(auth, (user) => {
+          currentUser = user;
+        });
+
+        if (!currentUser) return;
+
+        // RULE 1: Strict Path under /artifacts/{appId}/public/data/{collectionName}/{docId}
+        const boardStateDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'owarai_monopoly_state', 'classroom_board_v1');
+
+        let isLocalSaving = false;
+
+        // 掛載全域雲端存檔函式，供任何擲骰子、加分、新增題目動作呼叫
+        window.saveStateToFirestoreCloud = async (statePayload) => {
+          if (!currentUser) return;
+          try {
+            isLocalSaving = true;
+            if (statusText) statusText.textContent = "☁️ 雲端存檔中...";
+            await setDoc(boardStateDocRef, statePayload);
+            if (statusText) statusText.textContent = "🟢 雲端已自動存檔";
+            setTimeout(() => { isLocalSaving = false; }, 400);
+          } catch (err) {
+            isLocalSaving = false;
+            if (statusText) statusText.textContent = "☁️ 雲端備份";
+          }
+        };
+
+        // 監聽雲端狀態：重新整理頁面時立即還原，且支援多台電腦/平板同步觀看
+        onSnapshot(
+          boardStateDocRef,
+          (snapshot) => {
+            if (isLocalSaving) return;
+            if (snapshot.exists()) {
+              const cloudData = snapshot.data();
+              if (typeof window.applyRestoredGameState === 'function') {
+                window.applyRestoredGameState(cloudData);
+              }
+              if (statusText) statusText.textContent = "🟢 雲端已同步";
+            }
+          },
+          (error) => {
+            if (statusText) statusText.textContent = "☁️ 雲端備份";
+          }
+        );
+      } catch (e) {
+        if (statusText) statusText.textContent = "☁️ 雲端備份";
+      }
+    }
+
+    initCloudPersistence();
+  </script>
+</body>
+</html>
